@@ -185,27 +185,82 @@ function renderAdminTickets() {
     container.appendChild(aEl('div', 'padding:24px;text-align:center;color:#9199a8;', 'No tickets match your filters.'));
     return;
   }
+
+  var statusOrder = ['Pending','Assigned','Scheduled','In Progress','Completed','Awaiting Payment','Closed'];
+  var groups = {};
+  statusOrder.forEach(function(s) { groups[s] = []; });
   filtered.forEach(function(t) {
-    var card = aEl('div', 'background:#fff;border-radius:12px;padding:18px 20px;border:1px solid #e5e1dd;margin-bottom:10px;cursor:pointer;');
-    card.addEventListener('mouseover', function() { card.style.borderColor = '#D4601D'; });
-    card.addEventListener('mouseout',  function() { card.style.borderColor = '#e5e1dd'; });
-    card.addEventListener('click', function() { openAdminTicket(t.ref); });
-    var row = aEl('div', 'display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;');
-    var left = aEl('div', '');
-    var pills = aEl('div', 'display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;');
-    pills.appendChild(aEl('span', 'font-size:12px;font-weight:700;color:#9199a8;', t.ref));
-    pills.appendChild(aPill(t.status));
-    if (t.priority === 'Urgent') pills.appendChild(aPill('Urgent'));
-    left.appendChild(pills);
-    left.appendChild(aEl('div', 'font-size:14px;font-weight:600;color:#1a1a2e;', t.type + ' — ' + t.address));
-    left.appendChild(aEl('div', 'font-size:13px;color:#9199a8;margin-top:2px;', 'Client: ' + t.client + (t.contractor ? ' · ' + t.contractor : ' · Unassigned')));
-    var editBtn = aEl('button', 'background:#f0f1f3;color:#1a1a2e;border:none;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Edit');
-    editBtn.addEventListener('mouseover', function() { editBtn.style.background = '#D4601D'; editBtn.style.color = '#fff'; });
-    editBtn.addEventListener('mouseout',  function() { editBtn.style.background = '#f0f1f3'; editBtn.style.color = '#1a1a2e'; });
-    editBtn.addEventListener('click', function(e) { e.stopPropagation(); openAdminTicket(t.ref); });
-    row.appendChild(left); row.appendChild(editBtn);
-    card.appendChild(row);
-    container.appendChild(card);
+    if (!groups[t.status]) groups[t.status] = [];
+    groups[t.status].push(t);
+  });
+
+  statusOrder.forEach(function(status) {
+    var tickets = groups[status];
+    if (!tickets || !tickets.length) return;
+
+    var s = ADMIN_STATUS[status] || {bg:'#f0f1f3', col:'#9199a8'};
+    var groupHdr = aEl('div', 'display:flex;align-items:center;gap:10px;margin:20px 0 10px;');
+    var dot = aEl('div', 'width:10px;height:10px;border-radius:50%;background:'+s.col+';flex-shrink:0;');
+    var lbl = aEl('span', 'font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:'+s.col+';', status);
+    var cnt = aEl('span', 'font-size:11px;font-weight:600;background:'+s.bg+';color:'+s.col+';padding:2px 8px;border-radius:100px;', String(tickets.length));
+    groupHdr.appendChild(dot); groupHdr.appendChild(lbl); groupHdr.appendChild(cnt);
+    container.appendChild(groupHdr);
+
+    tickets.forEach(function(t) {
+      var card = aEl('div', 'background:#fff;border-radius:12px;padding:18px 20px;border:1px solid #e5e1dd;margin-bottom:8px;cursor:pointer;');
+      card.addEventListener('mouseover', function() { card.style.borderColor = '#D4601D'; card.style.boxShadow = '0 4px 16px rgba(212,96,29,0.08)'; });
+      card.addEventListener('mouseout',  function() { card.style.borderColor = '#e5e1dd'; card.style.boxShadow = 'none'; });
+      card.addEventListener('click', function() { openAdminTicket(t.ref); });
+
+      /* Top row: ref + priority + edit button */
+      var topRow = aEl('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;');
+      var refPills = aEl('div', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;');
+      refPills.appendChild(aEl('span', 'font-size:11px;font-weight:700;color:#9199a8;letter-spacing:0.3px;', t.ref));
+      refPills.appendChild(aEl('span', 'font-size:11px;font-weight:600;background:#f0f1f3;color:#4a5264;padding:2px 8px;border-radius:100px;', t.type));
+      if (t.priority === 'Urgent') refPills.appendChild(aPill('Urgent'));
+      var editBtn = aEl('button', 'background:#f0f1f3;color:#1a1a2e;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;flex-shrink:0;', 'Manage');
+      editBtn.addEventListener('mouseover', function() { editBtn.style.background = '#D4601D'; editBtn.style.color = '#fff'; });
+      editBtn.addEventListener('mouseout',  function() { editBtn.style.background = '#f0f1f3'; editBtn.style.color = '#1a1a2e'; });
+      editBtn.addEventListener('click', function(e) { e.stopPropagation(); openAdminTicket(t.ref); });
+      topRow.appendChild(refPills); topRow.appendChild(editBtn);
+      card.appendChild(topRow);
+
+      /* Address + description */
+      card.appendChild(aEl('div', 'font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:4px;', t.address));
+      card.appendChild(aEl('div', 'font-size:13px;color:#4a5264;line-height:1.5;margin-bottom:12px;border-bottom:1px solid #f0f1f3;padding-bottom:12px;', t.desc));
+
+      /* Detail grid: client / contractor / scheduled / price / payment */
+      var details = aEl('div', 'display:grid;grid-template-columns:1fr 1fr;gap:8px;');
+
+      function detailCell(label, value, highlight) {
+        var cell = aEl('div', '');
+        cell.appendChild(aEl('div', 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#9199a8;margin-bottom:2px;', label));
+        cell.appendChild(aEl('div', 'font-size:13px;font-weight:500;color:'+(highlight||'#1a1a2e')+';', value || '—'));
+        return cell;
+      }
+
+      details.appendChild(detailCell('Client', t.client));
+      details.appendChild(detailCell('Contractor', t.contractor || 'Unassigned', t.contractor ? '#1a1a2e' : '#D4601D'));
+      if (t.scheduled) details.appendChild(detailCell('Scheduled', t.scheduled));
+      if (t.price) details.appendChild(detailCell('Price', t.price, '#1a1a2e'));
+      card.appendChild(details);
+
+      /* Payment badge if applicable */
+      if (t.price) {
+        var pymtBadge = aEl('div', 'margin-top:10px;');
+        pymtBadge.appendChild(aPill(t.paid ? 'Paid' : 'Awaiting Payment'));
+        card.appendChild(pymtBadge);
+      }
+
+      /* Message count */
+      if (t.messages && t.messages.length) {
+        var msgRow = aEl('div', 'margin-top:8px;font-size:12px;color:#9199a8;');
+        msgRow.textContent = t.messages.length + ' message' + (t.messages.length > 1 ? 's' : '') + ' in thread';
+        card.appendChild(msgRow);
+      }
+
+      container.appendChild(card);
+    });
   });
 }
 
