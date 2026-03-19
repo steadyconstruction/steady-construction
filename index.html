@@ -1032,54 +1032,7 @@
    ============================================================ */
 
 /* ── DATA ── */
-var portalTickets = [
-  { ref:'SC-2024-041', type:'Plumbing', priority:'Urgent',
-    address:'14 Maple Street, Dublin 6',
-    desc:'Leak under bathroom sink — water dripping from waste pipe connection. Started yesterday evening.',
-    status:'In Progress', contractor:'Plumber', scheduled:'Today 2:00 PM',
-    price:'EUR 220–380', paid:false, payRef:'', payStatus:'Awaiting Payment',
-    progress:3,
-    messages:[
-      {from:'system', text:'Ticket SC-2024-041 created.', time:'9:02 AM'},
-      {from:'team', text:'Hi John, our plumber will be there at 2pm today. He will call 30 minutes before arrival.', time:'9:45 AM', name:'Steady Team'},
-      {from:'client', text:'No problem — key safe at front door, code 1234.', time:'10:12 AM', name:'You'},
-      {from:'team', text:'On site now. Found the issue — faulty waste trap. Replacing now, about 30 minutes.', time:'2:15 PM', name:'Plumber'}
-    ]
-  },
-  { ref:'SC-2024-039', type:'Cleaning', priority:'Standard',
-    address:'8 Orchard Road, Dublin 4',
-    desc:'End-of-tenancy deep clean required. 3-bed apartment, tenants leaving on Wed 18 Mar.',
-    status:'Scheduled', contractor:'Cleaning Team', scheduled:'Thu 18 Mar, 9:00 AM',
-    price:'EUR 280', paid:false, payRef:'', payStatus:'Awaiting Payment',
-    progress:2,
-    messages:[
-      {from:'system', text:'Ticket SC-2024-039 created.', time:'Yesterday 4:00 PM'},
-      {from:'team', text:'Hi John, the clean is booked for Thursday at 9am. Estimated 4 hours.', time:'Yesterday 5:00 PM', name:'Steady Team'}
-    ]
-  },
-  { ref:'SC-2024-037', type:'Electrical', priority:'Standard',
-    address:'22 Pine Avenue, Dublin 4',
-    desc:'Full consumer unit upgrade — outdated fuse box replaced with modern RCD board.',
-    status:'Completed', contractor:'Electrician', scheduled:'10 Mar 2026',
-    price:'EUR 480', paid:false, payRef:'', payStatus:'Awaiting Payment',
-    progress:4,
-    messages:[
-      {from:'system', text:'Job completed on 10 Mar 2026. Invoice issued.', time:'10 Mar'},
-      {from:'team', text:'All done John. New RCD board fitted and tested. Certificate of compliance issued. Invoice to follow.', time:'10 Mar', name:'Electrician'}
-    ]
-  },
-  { ref:'SC-2024-031', type:'Roofing', priority:'Urgent',
-    address:'14 Maple Street, Dublin 6',
-    desc:'Roof repair — several slates displaced after storm damage. Repaired and sealed.',
-    status:'Completed', contractor:'Roofer', scheduled:'22 Feb 2026',
-    price:'EUR 1,250', paid:true, payRef:'REF-2024-1192', payStatus:'Paid',
-    progress:4,
-    messages:[
-      {from:'system', text:'Job completed.', time:'22 Feb'},
-      {from:'team', text:'All sorted John. 14 slates replaced and ridge repointed. Before and after photos attached.', time:'22 Feb', name:'Roofer'}
-    ]
-  }
-];
+var portalTickets = [];
 
 /* ── HELPERS ── */
 var STATUS_COLOURS = {
@@ -2173,49 +2126,10 @@ window.submitNewRequest = submitNewRequest;
    ============================================================ */
 
 /* ── DATA ── */
-var adminTickets = [
-  { ref:'SC-2024-043', client:'Mary OSullivan', address:'5 Harbour View, Dublin 2', type:'Electrical',
-    desc:'Total power outage on ground floor. No power to sockets or lighting. Fuse box tripped repeatedly.',
-    status:'Pending', priority:'Urgent', contractor:'', scheduled:'', price:'', paid:false, messages:[], contractorMessages:[] },
-  { ref:'SC-2024-041', client:'John Murphy', address:'14 Maple St, Dublin 6', type:'Plumbing',
-    desc:'Leak under bathroom sink — water dripping from waste pipe.',
-    status:'In Progress', priority:'Urgent', contractor:'Ciaran OBrien', scheduled:'Today 2:00 PM', price:'EUR 320', paid:false,
-    messages:[{from:'team', text:'Ciaran on site — faulty waste trap identified. Replacing now.', time:'2:15 PM', name:'Steady Team'}], contractorMessages:[] },
-  { ref:'SC-2024-042', client:'David Walsh', address:'33 Lakeview Drive, Dublin 14', type:'Carpentry',
-    desc:'Kitchen cabinet doors warped. 4 doors need replacing. Hinges also loose.',
-    status:'Scheduled', priority:'Standard', contractor:'Padraig Doyle', scheduled:'Fri 20 Mar, 10:00 AM', price:'EUR 280', paid:false, messages:[], contractorMessages:[] },
-  { ref:'SC-2024-039', client:'John Murphy', address:'8 Orchard Rd, Dublin 4', type:'Cleaning',
-    desc:'End-of-tenancy deep clean. 3-bed apartment.',
-    status:'Scheduled', priority:'Standard', contractor:'Cleaning Team', scheduled:'Thu 18 Mar, 9:00 AM', price:'EUR 280', paid:false, messages:[], contractorMessages:[] },
-  { ref:'SC-2024-037', client:'John Murphy', address:'22 Pine Ave, Dublin 4', type:'Electrical',
-    desc:'Full consumer unit upgrade — outdated fuse box replaced with modern RCD board.',
-    status:'Completed', priority:'Standard', contractor:'Declan Byrne', scheduled:'10 Mar 2026', price:'EUR 480', paid:false, messages:[], contractorMessages:[] },
-  { ref:'SC-2024-031', client:'John Murphy', address:'14 Maple St, Dublin 6', type:'Roofing',
-    desc:'Roof repair — several slates displaced after storm damage.',
-    status:'Completed', priority:'Urgent', contractor:'Roofing Team', scheduled:'22 Feb 2026', price:'EUR 1,250', paid:true, messages:[], contractorMessages:[] }
-];
-
-var adminClients = [
-  { name:'John Murphy', email:'demo@steadyconstruction.ie', phone:'+353 87 123 4567', company:'Murphy Properties', props:3, tickets:4, active:true },
-  { name:'Mary OSullivan', email:'mary.os@example.ie', phone:'+353 86 234 5678', company:'', props:2, tickets:1, active:true },
-  { name:'David Walsh', email:'d.walsh@walshpm.ie', phone:'+353 85 345 6789', company:'Walsh Property Mgmt', props:5, tickets:2, active:true },
-  { name:'Claire Brennan', email:'claire@brennanlets.ie', phone:'+353 87 456 7890', company:'Brennan Lettings', props:4, tickets:0, active:false }
-];
-
-var adminContractors = [
-  { name:'Ciaran OBrien', trade:'Plumber', phone:'+353 87 111 2222', email:'ciaran@example.ie', jobs:12, active:true },
-  { name:'Declan Byrne', trade:'Electrician', phone:'+353 86 222 3333', email:'declan@example.ie', jobs:9, active:true },
-  { name:'Padraig Doyle', trade:'Carpenter', phone:'+353 85 333 4444', email:'padraig@example.ie', jobs:7, active:true },
-  { name:'Roofing Team', trade:'Roofer', phone:'+353 87 444 5555', email:'roof@example.ie', jobs:5, active:true },
-  { name:'Cleaning Team', trade:'Cleaner', phone:'+353 86 555 6666', email:'clean@example.ie', jobs:15, active:true }
-];
-
-var activityLog = [
-  { icon:'OK', text:'Job completed — Electrical upgrade, 22 Pine Ave', sub:'2 days ago · SC-2024-037', col:'#f0fdf4', tc:'#16a34a' },
-  { icon:'MSG', text:'Client message on SC-2024-041 from John Murphy', sub:'Today 10:12 AM', col:'#eff6ff', tc:'#2563eb' },
-  { icon:'NEW', text:'New ticket — Power outage, 5 Harbour View (URGENT)', sub:'Today 8:30 AM · SC-2024-043', col:'#fef2f2', tc:'#dc2626' },
-  { icon:'INV', text:'Invoice issued — EUR 480 for SC-2024-037', sub:'3 days ago', col:'#fffbeb', tc:'#d97706' }
-];
+var adminTickets = [];
+var adminClients = [];
+var adminContractors = [];
+var activityLog = [];
 
 /* ── DOM HELPER ── */
 function aEl(tag, css, txt) {
@@ -2295,33 +2209,58 @@ window.addEventListener('load', function() {
 /* ── INIT ── */
 function initAdminDashboard() {
   switchAdminTab('a-overview');
-  renderAdminOverview();
-  renderAdminTickets();
-  renderAdminClients();
-  renderContractorCards();
-  renderAdminPayments();
+  /* Show loading state */
+  var overviewEl = document.getElementById('a-overview');
+  if (overviewEl) overviewEl.innerHTML = '<div style="padding:40px;text-align:center;color:#9199a8;font-size:14px;">Loading dashboard…</div>';
+
+  Promise.all([
+    supaLoadTickets(null),
+    supaLoadClients(),
+    supaLoadContractors()
+  ]).then(function(results) {
+    mapSupaTicketsToAdmin(results[0] || []);
+    mapSupaClientsToAdmin(results[1] || []);
+    mapSupaContractorsToAdmin(results[2] || []);
+    renderAdminOverview();
+    renderAdminTickets();
+    renderAdminClients();
+    renderContractorCards();
+    renderAdminPayments();
+  }).catch(function() {
+    renderAdminOverview();
+    renderAdminTickets();
+    renderAdminClients();
+    renderContractorCards();
+    renderAdminPayments();
+  });
 }
 
 /* ── OVERVIEW KANBAN BOARD ── */
 function renderAdminOverview() {
-  var actLog = [
-    { icon:'OK', text:'Job completed — Electrical, 22 Pine Ave', sub:'2 days ago · SC-2024-037', col:'#f0fdf4', tc:'#16a34a' },
-    { icon:'MSG', text:'New message on SC-2024-041 from John Murphy', sub:'Today 10:12 AM', col:'#eff6ff', tc:'#2563eb' },
-    { icon:'NEW', text:'New ticket — Power outage, Harbour View (URGENT)', sub:'Today 8:30 AM · SC-2024-043', col:'#fef2f2', tc:'#dc2626' },
-    { icon:'INV', text:'Invoice issued — EUR 480 for SC-2024-037', sub:'3 days ago', col:'#fffbeb', tc:'#d97706' }
-  ];
+  /* Build activity log from real tickets (most recently updated first) */
   var logEl = document.getElementById('admin-activity-log');
   if (logEl) {
     logEl.innerHTML = '';
-    actLog.forEach(function(a) {
-      var row = aEl('div', 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:flex;align-items:center;gap:12px;');
-      row.appendChild(aEl('div', 'width:34px;height:34px;background:'+a.col+';border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:'+a.tc+';flex-shrink:0;', a.icon));
-      var info = aEl('div', '');
-      info.appendChild(aEl('div', 'font-size:13px;font-weight:500;color:#1a1a2e;', a.text));
-      info.appendChild(aEl('div', 'font-size:11px;color:#9199a8;margin-top:2px;', a.sub));
-      row.appendChild(info);
-      logEl.appendChild(row);
-    });
+    var sorted = adminTickets.slice().sort(function(a,b){ return (b.updated_at||b._id||'') > (a.updated_at||a._id||'') ? 1 : -1; });
+    var recent = sorted.slice(0, 6);
+    if (!recent.length) {
+      logEl.appendChild(aEl('div', 'padding:20px;text-align:center;color:#9199a8;font-size:13px;', 'No activity yet.'));
+    } else {
+      recent.forEach(function(t) {
+        var isCompleted = t.status === 'Completed';
+        var isUrgent    = t.priority === 'Urgent';
+        var col = isCompleted ? '#f0fdf4' : isUrgent ? '#fef2f2' : '#eff6ff';
+        var tc  = isCompleted ? '#16a34a' : isUrgent ? '#dc2626' : '#2563eb';
+        var icon = isCompleted ? 'OK' : isUrgent ? '!' : 'NEW';
+        var row = aEl('div', 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:flex;align-items:center;gap:12px;');
+        row.appendChild(aEl('div', 'width:34px;height:34px;background:'+col+';border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:'+tc+';flex-shrink:0;', icon));
+        var info = aEl('div', '');
+        info.appendChild(aEl('div', 'font-size:13px;font-weight:500;color:#1a1a2e;', t.type + ' — ' + t.address));
+        info.appendChild(aEl('div', 'font-size:11px;color:#9199a8;margin-top:2px;', t.status + ' · ' + t.ref + (t.client ? ' · ' + t.client : '')));
+        row.appendChild(info);
+        logEl.appendChild(row);
+      });
+    }
   }
 
   /* Kanban columns */
@@ -2817,6 +2756,10 @@ function renderAdminClients() {
   var container = document.getElementById('admin-client-list');
   if (!container) return;
   container.innerHTML = '';
+  if (!adminClients.length) {
+    container.appendChild(aEl('div', 'padding:30px;text-align:center;color:#9199a8;font-size:13px;', 'No clients yet. Add your first client above.'));
+    return;
+  }
   adminClients.forEach(function(c, i) {
     var row = aEl('div', 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:flex;align-items:center;gap:12px;flex-wrap:wrap;');
     var nameCol = aEl('div', 'flex:2;min-width:140px;');
@@ -2842,15 +2785,26 @@ function renderAdminClients() {
 function openNewClientForm() { var f = document.getElementById('new-client-form'); if (f) f.style.display = 'block'; }
 
 function createClient() {
-  var name = ((document.getElementById('nc-name') || {}).value || '').trim();
+  var name  = ((document.getElementById('nc-name')  || {}).value || '').trim();
   var email = ((document.getElementById('nc-email') || {}).value || '').trim();
+  var phone = ((document.getElementById('nc-phone') || {}).value || '').trim();
+  var company = ((document.getElementById('nc-company') || {}).value || '').trim();
   if (!name || !email) return;
-  adminClients.push({ name: name, email: email, phone: ((document.getElementById('nc-phone') || {}).value || ''), company: ((document.getElementById('nc-company') || {}).value || ''), props: 0, tickets: 0, active: true });
   var msg = document.getElementById('client-created-msg');
-  if (msg) { msg.style.display = 'block'; msg.textContent = 'Account created for ' + name + '. Activation email sent to ' + email; }
-  renderAdminClients();
-  ['nc-name','nc-email','nc-phone','nc-company'].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ''; });
-  setTimeout(function() { var m = document.getElementById('client-created-msg'); if (m) m.style.display = 'none'; }, 4000);
+  if (msg) { msg.style.display = 'block'; msg.style.color = '#D4601D'; msg.textContent = 'Creating account…'; }
+  supaCreateClient(email, name, phone, company).then(function(result) {
+    if (result.error) {
+      if (msg) { msg.style.display = 'block'; msg.style.color = '#dc2626'; msg.textContent = 'Error: ' + result.error.message; }
+      return;
+    }
+    supaLoadClients().then(function(rows) {
+      mapSupaClientsToAdmin(rows || []);
+      renderAdminClients();
+    });
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#16a34a'; msg.textContent = 'Account created for ' + name + '.'; }
+    ['nc-name','nc-email','nc-phone','nc-company'].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ''; });
+    setTimeout(function() { var m = document.getElementById('client-created-msg'); if (m) m.style.display = 'none'; }, 4000);
+  });
 }
 
 function toggleClient(i) { adminClients[i].active = !adminClients[i].active; renderAdminClients(); }
@@ -2862,6 +2816,10 @@ function renderContractorCards() {
   if (!container) return;
   container.innerHTML = '';
   var tradeInfo = { Plumber:{bg:'#eff6ff',tc:'#2563eb',ic:'PL'}, Electrician:{bg:'#fefce8',tc:'#d97706',ic:'EL'}, Carpenter:{bg:'#fff3ec',tc:'#D4601D',ic:'CA'}, Roofer:{bg:'#f0fdf4',tc:'#16a34a',ic:'RO'}, Painter:{bg:'#f5f3ff',tc:'#7c3aed',ic:'PA'}, Cleaner:{bg:'#f0f1f3',tc:'#9199a8',ic:'CL'} };
+  if (!adminContractors.length) {
+    container.appendChild(aEl('div', 'padding:30px;text-align:center;color:#9199a8;font-size:13px;grid-column:1/-1;', 'No contractors yet. Add your first contractor above.'));
+    return;
+  }
   adminContractors.forEach(function(c) {
     var ti = tradeInfo[c.trade] || {bg:'#f0f1f3', tc:'#9199a8', ic:'GN'};
     var card = aEl('div', 'background:#fff;border-radius:14px;padding:20px;border:1px solid #e5e1dd;');
@@ -2881,14 +2839,26 @@ function renderContractorCards() {
 function openNewContractorForm() { var f = document.getElementById('new-contractor-form'); if (f) f.style.display = 'block'; }
 
 function addContractor() {
-  var name = ((document.getElementById('ncon-name') || {}).value || '').trim();
+  var name  = ((document.getElementById('ncon-name')  || {}).value || '').trim();
+  var trade = ((document.getElementById('ncon-trade') || {}).value || 'General');
+  var phone = ((document.getElementById('ncon-phone') || {}).value || '').trim();
+  var email = ((document.getElementById('ncon-email') || {}).value || '').trim();
   if (!name) return;
-  adminContractors.push({ name: name, trade: ((document.getElementById('ncon-trade') || {}).value || 'General'), phone: ((document.getElementById('ncon-phone') || {}).value || ''), email: ((document.getElementById('ncon-email') || {}).value || ''), jobs: 0, active: true });
   var msg = document.getElementById('contractor-added-msg');
-  if (msg) { msg.style.display = 'block'; msg.textContent = name + ' added successfully.'; }
-  renderContractorCards();
-  ['ncon-name','ncon-phone','ncon-email'].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ''; });
-  setTimeout(function() { var m = document.getElementById('contractor-added-msg'); if (m) m.style.display = 'none'; }, 3000);
+  if (msg) { msg.style.display = 'block'; msg.style.color = '#D4601D'; msg.textContent = 'Saving…'; }
+  supaCreateContractor(name, trade, phone, email).then(function(result) {
+    if (result.error) {
+      if (msg) { msg.style.display = 'block'; msg.style.color = '#dc2626'; msg.textContent = 'Error: ' + result.error.message; }
+      return;
+    }
+    supaLoadContractors().then(function(rows) {
+      mapSupaContractorsToAdmin(rows || []);
+      renderContractorCards();
+    });
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#16a34a'; msg.textContent = name + ' added successfully.'; }
+    ['ncon-name','ncon-phone','ncon-email'].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ''; });
+    setTimeout(function() { var m = document.getElementById('contractor-added-msg'); if (m) m.style.display = 'none'; }, 3000);
+  });
 }
 
 /* ── PAYMENTS ── */
