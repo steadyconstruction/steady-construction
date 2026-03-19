@@ -1108,6 +1108,29 @@ function mkPill(text) {
   return e;
 }
 
+/* ── SUPABASE PORTAL MAPPERS ── */
+function mapSupaTicketsToPortal(rows) {
+  portalTickets = rows.map(function(r) {
+    return {
+      _id: r.id,
+      ref: r.ref || ('SC-' + r.id),
+      type: r.service_type || '',
+      priority: r.priority || 'Standard',
+      address: r.address || '',
+      desc: r.description || '',
+      status: r.status || 'Pending',
+      contractor: r.contractor_name || '',
+      scheduled: r.scheduled_at || '',
+      price: r.price ? 'EUR ' + r.price : '',
+      paid: r.paid || false,
+      payRef: r.pay_ref || '',
+      payStatus: r.paid ? 'Paid' : 'Awaiting Payment',
+      progress: r.status === 'Completed' ? 4 : r.status === 'In Progress' ? 3 : r.status === 'Scheduled' ? 2 : 1,
+      messages: []
+    };
+  });
+}
+
 /* ── AUTH ── */
 function openPortal() {
   document.getElementById('portal-modal').style.display = 'flex';
@@ -1121,17 +1144,35 @@ function doLogin() {
   var email = document.getElementById('portal-email').value.trim().toLowerCase();
   var pass = document.getElementById('portal-password').value;
   var err = document.getElementById('login-error');
-  if (email === 'demo@steadyconstruction.ie' && pass === 'demo1234') {
-    closePortal();
-    document.getElementById('portal-dashboard').style.display = 'block';
-    document.body.style.overflow = 'hidden';
-    initPortal();
-  } else {
-    err.style.display = 'block';
-    err.textContent = 'Incorrect email or password. Please check your details and try again.';
-  }
+  if (!email || !pass) { err.style.display='block'; err.textContent='Please enter your email and password.'; return; }
+  err.style.display='block'; err.style.color='#D4601D'; err.textContent='Signing in…';
+  supaSignIn(email, pass).then(function(result) {
+    if (result.error) {
+      err.style.display='block'; err.style.color='#D4601D';
+      err.textContent='Incorrect email or password. Please check your details and try again.';
+      return;
+    }
+    supaGetRole(email).then(function(userData) {
+      if (!userData || userData.role === 'admin') {
+        supaSignOut();
+        err.style.display='block'; err.style.color='#D4601D';
+        err.textContent='No client account found for this email.';
+        return;
+      }
+      err.style.display='none';
+      window._portalUser = userData;
+      supaLoadTickets(userData.id).then(function(rows) {
+        if (rows && rows.length) mapSupaTicketsToPortal(rows);
+        closePortal();
+        document.getElementById('portal-dashboard').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        initPortal();
+      });
+    });
+  });
 }
 function logoutPortal() {
+  supaSignOut();
   document.getElementById('portal-dashboard').style.display = 'none';
   document.body.style.overflow = '';
 }
@@ -1727,7 +1768,7 @@ function submitNewRequest() {
     });
   });
 
-  portalTickets.unshift({
+  var newTicket = {
     ref: ref, type: service, priority: priority,
     address: address.trim(),
     desc: desc.trim(),
@@ -1737,8 +1778,26 @@ function submitNewRequest() {
     price: 'Pending quote', paid: false, payRef: '', payStatus: 'Awaiting Payment',
     progress: 0,
     messages: initMessages,
-    cancelRequest: null  /* { reason, status: 'Pending Review' | 'Accepted' | 'Rejected', adminComment } */
-  });
+    cancelRequest: null
+  };
+  portalTickets.unshift(newTicket);
+
+  /* Save to Supabase */
+  if (window._portalUser && typeof initSupabase === 'function') {
+    initSupabase();
+    if (supa) {
+      supa.from('tickets').insert([{
+        ref: ref,
+        client_id: window._portalUser.id,
+        client_name: window._portalUser.full_name || '',
+        address: address.trim(),
+        service_type: service,
+        priority: priority,
+        description: desc.trim(),
+        status: 'Pending'
+      }]).then(function(){});
+    }
+  }
 
   var msg = document.getElementById('new-req-success');
   if (msg) {
@@ -1884,7 +1943,6 @@ window.submitNewRequest = submitNewRequest;
       </div>
       <button onclick="window.doAdminLogin()" style="background:#D4601D;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px;transition:background 0.2s;" onmouseover="this.style.background='#e87a3a'" onmouseout="this.style.background='#D4601D'">Sign In →</button>
     </div>
-    <p style="text-align:center;margin-top:20px;font-size:13px;color:rgba(255,255,255,0.25);">Demo: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ff9e9b929691bf8c8b9a9e9b869c90918c8b8d8a9c8b969091d1969a">[email&#160;protected]</a> / admin1234</p>
   </div>
 </div>
 
@@ -2195,20 +2253,36 @@ function closeAdminModal() {
   if (m) { m.style.display = 'none'; document.body.style.overflow = ''; }
 }
 function doAdminLogin() {
-  var e = (document.getElementById('admin-email') || {}).value || '';
+  var e = ((document.getElementById('admin-email') || {}).value || '').trim().toLowerCase();
   var p = (document.getElementById('admin-password') || {}).value || '';
   var err = document.getElementById('admin-login-error');
-  if (e.trim().toLowerCase() === 'admin@steadyconstruction.ie' && p === 'admin1234') {
-    closeAdminModal();
-    var dash = document.getElementById('admin-dashboard');
-    if (dash) dash.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-    initAdminDashboard();
-  } else {
-    if (err) { err.style.display = 'block'; err.textContent = 'Invalid credentials. Try admin@steadyconstruction.ie / admin1234'; }
+  if (!e || !p) {
+    if (err) { err.style.display = 'block'; err.textContent = 'Please enter your email and password.'; }
+    return;
   }
+  if (err) { err.style.display = 'block'; err.style.color = '#e87a3a'; err.textContent = 'Signing in…'; }
+  supaSignIn(e, p).then(function(result) {
+    if (result.error) {
+      if (err) { err.style.display = 'block'; err.style.color = '#e87a3a'; err.textContent = 'Incorrect email or password.'; }
+      return;
+    }
+    supaGetRole(e).then(function(userData) {
+      if (!userData || userData.role !== 'admin') {
+        supaSignOut();
+        if (err) { err.style.display = 'block'; err.style.color = '#e87a3a'; err.textContent = 'No admin account found for this email.'; }
+        return;
+      }
+      window._adminUser = userData;
+      closeAdminModal();
+      var dash = document.getElementById('admin-dashboard');
+      if (dash) dash.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      initAdminDashboard();
+    });
+  });
 }
 function logoutAdmin() {
+  supaSignOut();
   var dash = document.getElementById('admin-dashboard');
   if (dash) dash.style.display = 'none';
   document.body.style.overflow = '';
@@ -2873,8 +2947,8 @@ window.renderAdminOverview = renderAdminOverview;
 window.postContractorMsg = postContractorMsg;
 </script>
 
-
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
 
 
 
