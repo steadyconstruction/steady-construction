@@ -517,6 +517,7 @@ function postContractorMsg(ref) {
   var now = new Date();
   var ts = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
   t.contractorMessages.push({ from:'admin', text:msg, time:ts, name:'Admin' });
+  if (t._id) supaPostContractorMessage(t._id, 'admin', 'Admin', msg);
   inp.value = '';
   var thread = document.getElementById('admin-contractor-thread');
   if (thread) {
@@ -605,6 +606,7 @@ function saveAdminTicket(ref) {
   if (c) t.contractor = c.value;
   if (sc) t.scheduled = sc.value;
   if (p) t.price = p.value;
+  if (t._id) supaUpdateTicket(t._id, t);
   var msg = document.getElementById('ticket-save-msg');
   if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 3000); }
   renderAdminTickets();
@@ -615,7 +617,12 @@ function saveAdminTicket(ref) {
 /* ── PAYMENT STATUS ── */
 function setPaymentStatus(ref, paid) {
   var t = adminTickets.find(function(x) { return x.ref === ref; });
-  if (t) { t.paid = paid; openAdminTicket(ref); renderAdminPayments(); }
+  if (t) {
+    t.paid = paid;
+    if (t._id) supaSetPaid(t._id, paid);
+    openAdminTicket(ref);
+    renderAdminPayments();
+  }
 }
 
 /* ── POST MESSAGE ── */
@@ -626,6 +633,7 @@ function postAdminMsg(ref) {
   var msg = inp.value.trim();
   if (!msg) return;
   t.messages.push({ from: 'team', text: msg, time: 'Just now', name: 'Admin' });
+  if (t._id) supaPostMessage(t._id, 'team', 'Admin', msg);
   inp.value = '';
   var thread = document.getElementById('admin-chat-thread');
   if (thread) {
@@ -674,8 +682,14 @@ function openNewClientForm() { var f = document.getElementById('new-client-form'
 function createClient() {
   var name = ((document.getElementById('nc-name') || {}).value || '').trim();
   var email = ((document.getElementById('nc-email') || {}).value || '').trim();
+  var phone = ((document.getElementById('nc-phone') || {}).value || '');
+  var company = ((document.getElementById('nc-company') || {}).value || '');
   if (!name || !email) return;
-  adminClients.push({ name: name, email: email, phone: ((document.getElementById('nc-phone') || {}).value || ''), company: ((document.getElementById('nc-company') || {}).value || ''), props: 0, tickets: 0, active: true });
+  var newClient = { name: name, email: email, phone: phone, company: company, props: 0, tickets: 0, active: true };
+  adminClients.push(newClient);
+  supaCreateClient(email, name, phone, company).then(function(r) {
+    if (r.data) newClient._id = r.data.id;
+  });
   var msg = document.getElementById('client-created-msg');
   if (msg) { msg.style.display = 'block'; msg.textContent = 'Account created for ' + name + '. Activation email sent to ' + email; }
   renderAdminClients();
@@ -712,8 +726,15 @@ function openNewContractorForm() { var f = document.getElementById('new-contract
 
 function addContractor() {
   var name = ((document.getElementById('ncon-name') || {}).value || '').trim();
+  var trade = ((document.getElementById('ncon-trade') || {}).value || 'General');
+  var phone = ((document.getElementById('ncon-phone') || {}).value || '');
+  var email = ((document.getElementById('ncon-email') || {}).value || '');
   if (!name) return;
-  adminContractors.push({ name: name, trade: ((document.getElementById('ncon-trade') || {}).value || 'General'), phone: ((document.getElementById('ncon-phone') || {}).value || ''), email: ((document.getElementById('ncon-email') || {}).value || ''), jobs: 0, active: true });
+  var newCon = { name: name, trade: trade, phone: phone, email: email, jobs: 0, active: true };
+  adminContractors.push(newCon);
+  supaCreateContractor(name, trade, phone, email).then(function(r) {
+    if (r.data) newCon._id = r.data.id;
+  });
   var msg = document.getElementById('contractor-added-msg');
   if (msg) { msg.style.display = 'block'; msg.textContent = name + ' added successfully.'; }
   renderContractorCards();

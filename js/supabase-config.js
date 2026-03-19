@@ -50,9 +50,52 @@ function supaCreateContractor(fullName, trade, phone, email) {
   initSupabase();
   return supa.from('contractors').insert([{full_name:fullName,trade:trade,phone:phone,email:email}]).select().single();
 }
+/* ── TICKET WRITES ── */
+function supaUpdateTicket(id, updates) {
+  initSupabase();
+  if (!supa || !id) return Promise.resolve({});
+  return supa.from('tickets').update({
+    status: updates.status,
+    contractor_name: updates.contractor,
+    scheduled_at: updates.scheduled,
+    price: updates.price,
+    updated_at: new Date().toISOString()
+  }).eq('id', id);
+}
+function supaSetPaid(id, paid) {
+  initSupabase();
+  if (!supa || !id) return Promise.resolve({});
+  return supa.from('tickets').update({ paid: paid, updated_at: new Date().toISOString() }).eq('id', id);
+}
+
+/* ── MESSAGES ── */
+function supaPostMessage(ticketId, fromRole, name, body) {
+  initSupabase();
+  if (!supa || !ticketId) return Promise.resolve({});
+  return supa.from('messages').insert([{ ticket_id: ticketId, from_role: fromRole, sender_name: name, body: body }]);
+}
+function supaLoadMessages(ticketId) {
+  initSupabase();
+  if (!supa || !ticketId) return Promise.resolve([]);
+  return supa.from('messages').select('*').eq('ticket_id', ticketId).order('created_at', {ascending:true}).then(function(r){ return r.data||[]; });
+}
+function supaPostContractorMessage(ticketId, fromRole, name, body, fileName, fileUrl, isImage) {
+  initSupabase();
+  if (!supa || !ticketId) return Promise.resolve({});
+  return supa.from('contractor_messages').insert([{
+    ticket_id: ticketId, from_role: fromRole, sender_name: name,
+    body: body||'', file_name: fileName||null, file_url: fileUrl||null, is_image: !!isImage
+  }]);
+}
+function supaLoadContractorMessages(ticketId) {
+  initSupabase();
+  if (!supa || !ticketId) return Promise.resolve([]);
+  return supa.from('contractor_messages').select('*').eq('ticket_id', ticketId).order('created_at', {ascending:true}).then(function(r){ return r.data||[]; });
+}
+
 function mapSupaTicketsToAdmin(rows) {
   adminTickets = rows.map(function(r){
-    return {_id:r.id,ref:r.ref,client:r.client_id||'',address:r.address||'',type:r.service_type||'',
+    return {_id:r.id,ref:r.ref,client:r.client_name||r.client_id||'',address:r.address||'',type:r.service_type||'',
       desc:r.description||'',status:r.status||'Pending',priority:r.priority||'Standard',
       contractor:r.contractor_name||'',scheduled:r.scheduled_at||'',price:r.price||'',
       paid:r.paid||false,messages:[],contractorMessages:[]};
