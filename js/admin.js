@@ -365,12 +365,22 @@ function openAdminTicket(ref) {
   saveMsg.id = 'ticket-save-msg';
   panelContent.appendChild(saveMsg);
 
-  /* Chat */
-  var chatBox = aEl('div', 'border:1px solid #e5e1dd;border-radius:14px;overflow:hidden;');
-  var chatHdr = aEl('div', 'padding:16px 20px;border-bottom:1px solid #f0f1f3;background:#fff;');
-  chatHdr.appendChild(aEl('div', 'font-size:14px;font-weight:700;color:#1a1a2e;', 'Communication Log'));
-  chatHdr.appendChild(aEl('div', 'font-size:12px;color:#9199a8;margin-top:2px;', 'Visible to the client in their portal'));
-  chatBox.appendChild(chatHdr);
+  /* ── COMMS TABS ── */
+  var commsWrap = aEl('div', 'border:1px solid #e5e1dd;border-radius:14px;overflow:hidden;');
+
+  /* Tab bar */
+  var tabBar = aEl('div', 'display:flex;border-bottom:1px solid #f0f1f3;background:#fff;');
+  var clientTabBtn = aEl('button', 'flex:1;padding:14px 16px;border:none;background:#fff;font-size:13px;font-weight:700;color:#D4601D;cursor:pointer;font-family:"DM Sans",sans-serif;border-bottom:2px solid #D4601D;', 'Client Chat');
+  var contractorTabBtn = aEl('button', 'flex:1;padding:14px 16px;border:none;background:#fff;font-size:13px;font-weight:600;color:#9199a8;cursor:pointer;font-family:"DM Sans",sans-serif;border-bottom:2px solid transparent;', 'Contractor Chat');
+  tabBar.appendChild(clientTabBtn);
+  tabBar.appendChild(contractorTabBtn);
+  commsWrap.appendChild(tabBar);
+
+  /* ── CLIENT CHAT PANEL ── */
+  var clientPanel = aEl('div', '');
+  var clientSubHdr = aEl('div', 'padding:10px 20px;background:#fff8f5;border-bottom:1px solid #f0f1f3;');
+  clientSubHdr.appendChild(aEl('div', 'font-size:12px;color:#9199a8;', 'Visible to the client in their portal'));
+  clientPanel.appendChild(clientSubHdr);
 
   var chatThread = aEl('div', 'padding:16px 20px;background:#f7f8fa;min-height:80px;max-height:280px;overflow-y:auto;');
   chatThread.id = 'admin-chat-thread';
@@ -392,7 +402,7 @@ function openAdminTicket(ref) {
       }
     });
   }
-  chatBox.appendChild(chatThread);
+  clientPanel.appendChild(chatThread);
 
   var chatFoot = aEl('div', 'padding:14px 16px;border-top:1px solid #f0f1f3;background:#fff;display:flex;gap:10px;');
   var msgInput = document.createElement('input');
@@ -404,8 +414,111 @@ function openAdminTicket(ref) {
   var postBtn = aEl('button', 'background:#1c1c1c;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap;', 'Post Update');
   postBtn.addEventListener('click', function() { postAdminMsg(ref); });
   chatFoot.appendChild(msgInput); chatFoot.appendChild(postBtn);
-  chatBox.appendChild(chatFoot);
-  panelContent.appendChild(chatBox);
+  clientPanel.appendChild(chatFoot);
+  commsWrap.appendChild(clientPanel);
+
+  /* ── CONTRACTOR CHAT PANEL ── */
+  if (!t.contractorMessages) t.contractorMessages = [];
+
+  var contractorPanel = aEl('div', 'display:none;');
+  var conSubHdr = aEl('div', 'padding:10px 20px;background:#f5f3ff;border-bottom:1px solid #f0f1f3;');
+  conSubHdr.appendChild(aEl('div', 'font-size:12px;color:#7c3aed;', 'Private — only visible to admin and the assigned contractor'));
+  contractorPanel.appendChild(conSubHdr);
+
+  var conThread = aEl('div', 'padding:16px 20px;background:#f7f8fa;min-height:80px;max-height:280px;overflow-y:auto;');
+  conThread.id = 'admin-contractor-thread';
+
+  function renderConThread() {
+    conThread.innerHTML = '';
+    if (!t.contractorMessages.length) {
+      conThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet. Send a note or photo to the contractor.'));
+      return;
+    }
+    t.contractorMessages.forEach(function(m) {
+      var isAdmin = m.from === 'admin';
+      var row = aEl('div', 'display:flex;' + (isAdmin ? '' : 'justify-content:flex-end;') + 'margin-bottom:12px;');
+      var col = aEl('div', 'max-width:75%;');
+      if (m.type === 'photo') {
+        var img = document.createElement('img');
+        img.src = m.src; img.alt = 'Job photo';
+        img.style.cssText = 'max-width:100%;border-radius:10px;display:block;border:1px solid #e5e1dd;margin-bottom:4px;cursor:pointer;';
+        img.addEventListener('click', function() { window.open(m.src, '_blank'); });
+        col.appendChild(img);
+      } else {
+        var bubble = aEl('div', 'background:'+(isAdmin?'#f0f1f3':'#7c3aed')+';color:'+(isAdmin?'#1a1a2e':'#fff')+';border-radius:'+(isAdmin?'14px 14px 14px 4px':'14px 14px 4px 14px')+';padding:10px 14px;font-size:13px;line-height:1.5;');
+        bubble.appendChild(aEl('div', '', m.text));
+        col.appendChild(bubble);
+      }
+      col.appendChild(aEl('div', 'font-size:11px;color:#9199a8;margin-top:4px;', (m.name || m.from) + ' · ' + m.time));
+      row.appendChild(col); conThread.appendChild(row);
+    });
+    conThread.scrollTop = conThread.scrollHeight;
+  }
+  renderConThread();
+  contractorPanel.appendChild(conThread);
+
+  /* Photo upload strip */
+  var photoStrip = aEl('div', 'padding:10px 16px;border-top:1px solid #f0f1f3;background:#fafafa;display:flex;align-items:center;gap:8px;flex-wrap:wrap;');
+  photoStrip.id = 'photo-strip-' + ref;
+  var photoInput = document.createElement('input');
+  photoInput.type = 'file'; photoInput.accept = 'image/*'; photoInput.multiple = true; photoInput.style.display = 'none';
+  photoInput.addEventListener('change', function() {
+    Array.from(photoInput.files).forEach(function(file) {
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var now = new Date(); var time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+        t.contractorMessages.push({ from:'admin', type:'photo', src: ev.target.result, time: time, name:'Admin' });
+        renderConThread();
+      };
+      reader.readAsDataURL(file);
+    });
+    photoInput.value = '';
+  });
+  var uploadBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:1px solid #e5e1dd;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;display:flex;align-items:center;gap:5px;', '📷 Upload Photo');
+  uploadBtn.appendChild(photoInput);
+  uploadBtn.addEventListener('click', function() { photoInput.click(); });
+  photoStrip.appendChild(uploadBtn);
+  photoStrip.appendChild(aEl('span', 'font-size:11px;color:#9199a8;', 'Attach job photos from the site'));
+  contractorPanel.appendChild(photoStrip);
+
+  /* Contractor message input */
+  var conFoot = aEl('div', 'padding:14px 16px;border-top:1px solid #f0f1f3;background:#fff;display:flex;gap:10px;');
+  var conInput = document.createElement('input');
+  conInput.type = 'text'; conInput.id = 'admin-con-input'; conInput.placeholder = 'Message the contractor...';
+  conInput.style.cssText = 'flex:1;border:1px solid #e5e1dd;border-radius:8px;padding:10px 14px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;';
+  conInput.addEventListener('focus', function() { conInput.style.borderColor = '#7c3aed'; });
+  conInput.addEventListener('blur',  function() { conInput.style.borderColor = '#e5e1dd'; });
+  conInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { sendConMsg(); }
+  });
+  function sendConMsg() {
+    var msg = conInput.value.trim();
+    if (!msg) return;
+    var now = new Date(); var time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+    t.contractorMessages.push({ from:'admin', type:'text', text: msg, time: time, name:'Admin' });
+    conInput.value = '';
+    renderConThread();
+  }
+  var conSendBtn = aEl('button', 'background:#7c3aed;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap;', 'Send');
+  conSendBtn.addEventListener('click', sendConMsg);
+  conFoot.appendChild(conInput); conFoot.appendChild(conSendBtn);
+  contractorPanel.appendChild(conFoot);
+  commsWrap.appendChild(contractorPanel);
+
+  /* Tab switching */
+  clientTabBtn.addEventListener('click', function() {
+    clientPanel.style.display = ''; contractorPanel.style.display = 'none';
+    clientTabBtn.style.color = '#D4601D'; clientTabBtn.style.borderBottom = '2px solid #D4601D';
+    contractorTabBtn.style.color = '#9199a8'; contractorTabBtn.style.borderBottom = '2px solid transparent';
+  });
+  contractorTabBtn.addEventListener('click', function() {
+    clientPanel.style.display = 'none'; contractorPanel.style.display = '';
+    contractorTabBtn.style.color = '#7c3aed'; contractorTabBtn.style.borderBottom = '2px solid #7c3aed';
+    clientTabBtn.style.color = '#9199a8'; clientTabBtn.style.borderBottom = '2px solid transparent';
+    renderConThread();
+  });
+
+  panelContent.appendChild(commsWrap);
 
   panel.style.display = 'block';
   switchAdminTab('a-tickets');
