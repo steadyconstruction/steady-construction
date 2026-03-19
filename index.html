@@ -4,12 +4,342 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light">
-<meta name="cf-2fa-verify" content="off">
 <title>Steady Construction | Property Maintenance & Construction Dublin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    color-scheme: light;
+    --navy: #1c1c1c;
+    --navy-mid: #262626;
+    --navy-soft: #2f2f2f;
+    --slate: #4a4a4a;
+    --blue: #D4601D;
+    --blue-light: #e0722f;
+    --blue-pale: #fff3ec;
+    --gold: #D4601D;
+    --gold-light: #e87a3a;
+    --white: #ffffff;
+    --off: #f9f7f5;
+    --gray-100: #f2f0ee;
+    --gray-200: #e5e1dd;
+    --gray-400: #a09890;
+    --gray-600: #5a5450;
+    --gray-800: #2a2420;
+    --text: #1a1614;
+    --radius: 12px;
+    --radius-lg: 20px;
+    --shadow: 0 4px 24px rgba(28,28,28,0.08);
+    --shadow-lg: 0 12px 48px rgba(28,28,28,0.14);
+  }
+  html { scroll-behavior: smooth; overflow-x: hidden; color-scheme: light; background: #ffffff; }
+  body { font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--white); line-height: 1.6; overflow-x: hidden; }
+  h1,h2,h3,h4 { font-family: 'DM Serif Display', serif; line-height: 1.15; }
+  .serif-italic { font-style: italic; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(255,255,255,0.98);
+    backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 6%; height: 64px;
+    border-bottom: 1px solid rgba(28,28,28,0.1);
+    box-shadow: 0 2px 16px rgba(28,28,28,0.06);
+  }
+  .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .nav-logo-mark {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #D4601D, #e87a3a);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px; color: var(--white); font-weight: 400;
+  }
+  .nav-logo-text { font-size: 17px; font-weight: 600; color: var(--navy); letter-spacing: -0.3px; }
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a { text-decoration: none; color: rgba(28,28,28,0.65); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--navy); }
+  .nav-cta {
+    background: var(--gold); color: var(--white); border: none;
+    padding: 9px 20px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; text-decoration: none; transition: background 0.2s, transform 0.15s;
+  }
+  .nav-cta:hover { background: var(--gold-light); transform: translateY(-1px); }
+  .nav-hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
+  .nav-hamburger span { display: block; width: 22px; height: 2px; background: rgba(28,28,28,0.7); border-radius: 2px; transition: 0.3s; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh; background: var(--navy);
+    display: flex; align-items: center;
+    position: relative; overflow: hidden;
+    padding: 100px 6% 80px;
+  }
+  .hero-grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .hero-glow { position: absolute; top: -200px; right: -200px; width: 700px; height: 700px; background: radial-gradient(circle, rgba(212,96,29,0.2) 0%, transparent 70%); pointer-events: none; }
+  .hero-glow-gold { position: absolute; bottom: -150px; left: -100px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(212,96,29,0.1) 0%, transparent 70%); pointer-events: none; }
+  .hero-content { position: relative; z-index: 2; max-width: 700px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(212,96,29,0.15); border: 1px solid rgba(212,96,29,0.35);
+    color: #e87a3a; font-size: 13px; font-weight: 500;
+    padding: 6px 14px; border-radius: 100px; margin-bottom: 28px;
+  }
+  .hero-badge-dot { width: 7px; height: 7px; background: var(--gold); border-radius: 50%; }
+  .hero h1 { font-size: clamp(42px, 6vw, 72px); color: var(--white); margin-bottom: 12px; }
+  .hero h1 .accent { color: var(--gold); }
+  .hero-sub { font-size: 18px; color: rgba(255,255,255,0.6); max-width: 560px; margin: 20px 0 40px; line-height: 1.7; font-weight: 300; }
+  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--gold); color: var(--white);
+    padding: 14px 28px; border-radius: var(--radius); font-size: 15px; font-weight: 600;
+    text-decoration: none; border: none; cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 16px rgba(212,96,29,0.35);
+  }
+  .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(212,96,29,0.4); }
+  .btn-ghost {
+    background: transparent; color: var(--white);
+    padding: 14px 28px; border-radius: var(--radius); font-size: 15px; font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.2); text-decoration: none; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.05); }
+  .hero-stats { display: flex; gap: 40px; margin-top: 60px; padding-top: 40px; border-top: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap; }
+  .hero-stat-num { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--white); }
+  .hero-stat-label { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+  /* TRUST BAR */
+  .trust-bar {
+    background: var(--navy-mid); border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 18px 6%; display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap;
+  }
+  .trust-item { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 500; }
+  .trust-icon { color: var(--gold); font-size: 16px; }
+
+  /* SECTIONS */
+  section { padding: 96px 6%; }
+  .section-label { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+  .section-title { font-size: clamp(32px, 4vw, 48px); color: var(--navy); margin-bottom: 20px; }
+  .section-lead { font-size: 18px; color: var(--gray-600); max-width: 580px; font-weight: 300; line-height: 1.7; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+
+  /* HOW IT WORKS */
+  .how-section { background: var(--off); }
+  .step-card {
+    background: var(--white); border-radius: var(--radius-lg); padding: 32px 28px;
+    border: 1px solid var(--gray-200); position: relative; transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .step-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .step-num { font-family: 'DM Serif Display', serif; font-size: 48px; color: var(--gray-200); line-height: 1; margin-bottom: 16px; }
+  .step-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--blue-pale); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 20px; }
+  .step-card h3 { font-size: 20px; color: var(--navy); margin-bottom: 10px; }
+  .step-card p { font-size: 14px; color: var(--gray-600); line-height: 1.7; }
+
+  /* BENEFIT GRID */
+  .benefit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .benefit-item { display: flex; gap: 14px; align-items: flex-start; }
+  .benefit-icon-wrap { width: 40px; height: 40px; min-width: 40px; border-radius: 10px; background: var(--blue-pale); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .benefit-item h4 { font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
+  .benefit-item p { font-size: 13px; color: var(--gray-600); line-height: 1.6; }
+
+  /* SERVICES GRID */
+  .services-section { background: var(--off); }
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; }
+  .service-card {
+    background: var(--white); border-radius: var(--radius-lg); padding: 28px 24px;
+    border: 1px solid var(--gray-200); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  }
+  .service-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--gold); }
+  .service-card-icon { font-size: 28px; margin-bottom: 14px; }
+  .service-card h3 { font-size: 19px; color: var(--navy); margin-bottom: 8px; }
+  .service-card p { font-size: 14px; color: var(--gray-600); line-height: 1.7; }
+
+  /* CONTRACTS SECTION */
+  .contracts-section {
+    background: var(--navy); position: relative; overflow: hidden;
+  }
+  .contracts-section .hero-grid-bg { opacity: 0.6; }
+  .contracts-glow { position: absolute; top: -100px; right: -100px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(212,96,29,0.18) 0%, transparent 70%); pointer-events: none; }
+  .contracts-content { position: relative; z-index: 2; }
+  .contracts-section .section-label { color: var(--gold-light); }
+  .contracts-section .section-title { color: var(--white); }
+  .contracts-section .section-lead { color: rgba(255,255,255,0.6); }
+
+  .contract-benefits { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 48px; }
+  .contract-benefit-card {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-lg); padding: 28px 24px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .contract-benefit-card:hover { background: rgba(255,255,255,0.08); border-color: rgba(201,168,76,0.3); }
+  .contract-benefit-icon { font-size: 28px; margin-bottom: 14px; }
+  .contract-benefit-card h4 { font-size: 16px; color: var(--white); margin-bottom: 8px; }
+  .contract-benefit-card p { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.7; }
+
+  /* WHY US */
+  .why-card {
+    background: var(--white); border-radius: var(--radius-lg); padding: 32px 28px;
+    border: 1px solid var(--gray-200); transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .why-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .why-icon { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #D4601D, #e87a3a); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 18px; }
+  .why-card h3 { font-size: 20px; color: var(--navy); margin-bottom: 10px; }
+  .why-card p { font-size: 14px; color: var(--gray-600); line-height: 1.7; }
+
+  /* CLIENT TYPES */
+  .clients-section { background: var(--off); }
+  .client-tab-row { display: flex; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; }
+  .client-tab {
+    padding: 10px 22px; border-radius: 100px; font-size: 14px; font-weight: 600;
+    border: 1px solid var(--gray-200); background: var(--white); color: var(--gray-600);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .client-tab.active, .client-tab:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
+  .client-content { display: none; }
+  .client-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+  .client-text h3 { font-size: clamp(28px, 3vw, 38px); color: var(--navy); margin-bottom: 16px; }
+  .client-text p { font-size: 16px; color: var(--gray-600); line-height: 1.8; margin-bottom: 28px; font-weight: 300; }
+  .client-points { display: flex; flex-direction: column; gap: 12px; }
+  .client-point { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--gray-800); font-weight: 500; }
+  .client-point-dot { width: 8px; height: 8px; background: var(--gold); border-radius: 50%; min-width: 8px; }
+  .client-visual {
+    background: var(--navy); border-radius: var(--radius-lg); padding: 40px;
+    display: flex; flex-direction: column; gap: 16px; position: relative; overflow: hidden;
+  }
+  .client-visual::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .client-visual-item {
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius); padding: 16px 18px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .client-visual-icon { font-size: 22px; }
+  .client-visual-label { font-size: 14px; color: rgba(255,255,255,0.8); font-weight: 500; }
+  .client-visual-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+  /* CONTACT */
+  .contact-section { background: var(--navy); position: relative; overflow: hidden; }
+  .contact-section .hero-grid-bg { opacity: 0.5; }
+  .contact-glow { position: absolute; bottom: -200px; left: -200px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(212,96,29,0.15) 0%, transparent 70%); pointer-events: none; }
+  .contact-inner { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; }
+  .contact-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 60px; align-items: start; }
+  .contact-info .section-label { color: var(--gold-light); }
+  .contact-info .section-title { color: var(--white); }
+  .contact-info .section-lead { color: rgba(255,255,255,0.6); margin-bottom: 40px; }
+  .contact-detail { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 16px; }
+  .contact-detail-icon { width: 36px; height: 36px; background: rgba(255,255,255,0.07); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+
+  .contact-form {
+    background: var(--white); border-radius: var(--radius-lg); padding: 40px 36px;
+  }
+  .contact-form h3 { font-size: 24px; color: var(--navy); margin-bottom: 24px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .form-group label { font-size: 13px; font-weight: 600; color: var(--gray-800); }
+  .form-group input, .form-group select, .form-group textarea {
+    border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 11px 14px;
+    font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text);
+    background: var(--off); outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,96,29,0.1);
+  }
+  .form-group textarea { resize: vertical; min-height: 100px; }
+  .form-submit {
+    width: 100%; background: var(--gold); color: var(--navy);
+    border: none; border-radius: var(--radius); padding: 14px;
+    font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; margin-top: 8px;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 16px rgba(212,96,29,0.3);
+  }
+  .form-submit:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(212,96,29,0.4); }
+
+  /* FOOTER */
+  footer {
+    background: #ffffff; border-top: 1px solid rgba(28,28,28,0.1);
+    padding: 56px 6% 32px;
+  }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; max-width: 1100px; margin: 0 auto 48px; }
+  .footer-brand p { font-size: 14px; color: var(--gray-600); margin-top: 16px; line-height: 1.7; max-width: 280px; }
+  .footer-links h4 { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--gray-400); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+  .footer-links ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .footer-links a { text-decoration: none; color: var(--gray-600); font-size: 14px; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--gold); }
+  .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid rgba(28,28,28,0.08); color: var(--gray-400); font-size: 13px; flex-wrap: wrap; gap: 12px; max-width: 1100px; margin: 0 auto; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .grid-2, .client-content.active { grid-template-columns: 1fr; gap: 40px; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    .contact-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+    .benefit-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .nav-hamburger { display: flex; }
+  }
+  @media (max-width: 600px) {
+    .grid-3 { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .hero-stats { gap: 24px; }
+    section { padding: 64px 5%; }
+    .contact-form { padding: 28px 22px; }
+    .trust-bar { gap: 16px; }
+    .nav-cta { padding: 7px 14px; font-size: 12px; }
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero-content > * { animation: fadeUp 0.7s ease both; }
+  .hero-content > *:nth-child(1) { animation-delay: 0.1s; }
+  .hero-content > *:nth-child(2) { animation-delay: 0.2s; }
+  .hero-content > *:nth-child(3) { animation-delay: 0.3s; }
+  .hero-content > *:nth-child(4) { animation-delay: 0.4s; }
+  .hero-content > *:nth-child(5) { animation-delay: 0.5s; }
+
+  /* Email links — no underline, no colour change, ever */
+  a[href^="mailto:"],
+  a[href^="mailto:"]:hover,
+  a[href^="mailto:"]:visited,
+  a[href^="mailto:"]:focus,
+  a[href^="mailto:"]:active {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  /* Hard reset — emails are plain text, never links */
+  a[href^="mailto:"] { 
+    color: inherit !important; 
+    text-decoration: none !important; 
+    pointer-events: none; 
+    cursor: default;
+  }
+  /* Belt and braces for any CF obfuscated anchors */
+  a[href*="cdn-cgi"] {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+</style>
 </head>
 <body>
+
 <!-- NAV -->
 <nav>
   <a class="nav-logo" href="#">
@@ -18,11 +348,11 @@
   <ul class="nav-links">
     <li><a href="#services">Services</a></li>
     <li><a href="#residential">Residential</a></li>
-    <li><a href="#commercial">Commercial</a></li>
+    <li><a href="#residential" onclick="setTimeout(function(){switchTab('commercial-tab');},100)">Commercial</a></li>
     <li><a href="#contracts">Contracts</a></li>
     <li><a href="#contact">Contact</a></li>
   </ul>
-  <a href="#contact" class="nav-cta">Get a Quote</a>
+  <a href="javascript:void(0)" onclick="openPortal()" class="nav-cta" style="background:#1c1c1c;margin-right:8px;">Client Login</a><a href="#contact" class="nav-cta">Get a Quote</a>
   <div class="nav-hamburger" onclick="this.classList.toggle('open')">
   </div>
 </nav>
@@ -362,6 +692,19 @@
   </div>
 </section>
 
+<script>
+  function switchTab(id) {
+    document.querySelectorAll('.client-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.client-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    // activate matching tab button
+    const labels = { 'residential-tab': 'Residential', 'commercial-tab': 'Commercial', 'landlord-tab': 'Landlords & Managers' };
+    document.querySelectorAll('.client-tab').forEach(t => {
+      if (t.textContent.trim() === labels[id]) t.classList.add('active');
+    });
+  }
+</script>
+
 <!-- PORTAL SHOWCASE SECTION -->
 <section id="portal-showcase" style="background:var(--off);padding:96px 6%;">
   <div style="max-width:1100px;margin:0 auto;">
@@ -406,11 +749,12 @@
       </div>
     </div>
     <div style="text-align:center;">
-      <button onclick="openPortal()" style="background:var(--gold);color:#fff;border:none;padding:16px 36px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 4px 16px rgba(212,96,29,0.35);transition:all 0.2s;" onmouseover="this.style.background='var(--gold-light)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='var(--gold)';this.style.transform='none'">View Portal Demo →</button>
-      <p style="margin-top:12px;font-size:13px;color:var(--gray-400);">Try the demo with: email <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="9df9f8f0f2ddeee9f8fcf9e4fef2f3eee9efe8fee9f4f2f3b3f4f8">[email&#160;protected]</a></strong> / password <strong>demo1234</strong></p>
+      <a href="#contact" style="display:inline-block;background:var(--gold);color:#fff;border:none;padding:16px 32px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;text-decoration:none;font-family:'DM Sans',sans-serif;transition:background 0.2s,transform 0.15s;" onmouseover="this.style.background='var(--gold-light)';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='var(--gold)';this.style.transform='none'">Request Demo →</a>
+      
     </div>
   </div>
 </section>
+
 
 <!-- CONTACT -->
 <section class="contact-section" id="contact">
@@ -422,15 +766,15 @@
         <div class="section-label">Get In Touch</div>
         <h2 class="section-title">Request a Quote</h2>
         <p class="section-lead">Whether it's a quick repair, a full renovation, or an ongoing contract — our team is ready to help. Get in touch for a consultation and quote.</p>
-        <div class="contact-detail"><div class="contact-detail-icon">📍</div> Dublin, Ireland — serving all Dublin postcodes</div>
-        <div class="contact-detail"><div class="contact-detail-icon">📞</div> Available Mon–Sat, 7am–7pm</div>
-        <div class="contact-detail"><div class="contact-detail-icon">✉️</div> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="51383f373e11222534303528323e3f222523243225383e3f7f3834">[email&#160;protected]</a></div>
+        <div class="contact-detail"><div class="contact-detail-icon">📍</div> All across Dublin — serving all Dublin postcodes</div>
+        <div class="contact-detail"><div class="contact-detail-icon">🕐</div> Available Monday – Friday, 9:00 AM – 6:00 PM</div>
+        <div class="contact-detail"><div class="contact-detail-icon">✉️</div> <span style="color:inherit;text-decoration:none;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6e010808070d0b2e1d1a0b0f0a170d01001d1a1c1b0d1a07010040070b">[email&#160;protected]</a></span></div>
 
       </div>
       <div class="contact-form">
         <h3>Tell Us About Your Project</h3>
         <iframe data-tally-src="https://tally.so/embed/eqElbE?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1" loading="lazy" width="100%" height="500" frameborder="0" marginheight="0" marginwidth="0" title="Steady Construction Enquiry Form"></iframe>
-        <script>var d=document,w="https://tally.so/widgets/embed.js",v=function(){"undefined"!=typeof Tally?Tally.loadEmbeds():d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function(e){e.src=e.dataset.tallySrc}))};if("undefined"!=typeof Tally)v();else if(d.querySelector('script[src="'+w+'"]')==null){var s=d.createElement("script");s.src=w;s.onload=v;s.onerror=v;d.body.appendChild(s);}</script>
+        <script>var d=document,w="https://tally.so/widgets/embed.js",v=function(){"undefined"!=typeof Tally?Tally.loadEmbeds():d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function(e){e.src=e.dataset.tallySrc}))};if("undefined"!=typeof Tally)v();else if(d.querySelector('script[src="'+w+'"]'))==null){var s=d.createElement("script");s.src=w;s.onload=v;s.onerror=v;d.body.appendChild(s);}</script>
       </div>
     </div>
   </div>
@@ -458,30 +802,34 @@
       <h4>Clients</h4>
       <ul>
         <li><a href="#residential">Residential</a></li>
-        <li><a href="#commercial">Commercial</a></li>
+        <li><a href="#residential" onclick="setTimeout(function(){switchTab('commercial-tab');},100)">Commercial</a></li>
         <li><a href="#contracts">Maintenance Contracts</a></li>
         <li><a href="#contact">Request a Quote</a></li>
       </ul>
     </div>
     <div class="footer-links">
-      <h4>Steady Group</h4>
+      <h4>Contact</h4>
       <ul>
-        <li><a href="#">Steady Yield — Guaranteed Rent</a></li>
+        <li style="font-size:13px;color:var(--gray-400);line-height:1.6;">20 Harcourt Street<br>Dublin 2, D02 H364<br>Ireland</li>
+        <li style="margin-top:10px;"><a href="tel:+353000000000">+353 1 XXX XXXX</a></li>
+        <li><span style="color:inherit;text-decoration:none;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="325d54545b51577241465753564b515d5c4146404751465b5d5c1c5b57">[email&#160;protected]</a></span></li>
+        <li style="margin-top:10px;font-size:13px;color:var(--gray-400);">Service Area: All across Dublin</li>
       </ul>
     </div>
   </div>
   <div class="footer-bottom">
     <span>© 2026 Steady Construction. All rights reserved.</span>
-    <span style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-      <span>Fully Registered &amp; Insured in Ireland</span>
-      <span>Dublin, Ireland</span>
+    <span style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px;">
+      <span>Steady Construction of Steady Yield. Trading under JMAFG Limited. Registered address 20 Harcourt Street, Dublin 2, D02 H364.</span>
     </span>
     <span style="display:flex;align-items:center;gap:10px;">
-      <a href="javascript:void(0)" onclick="openPortal()" style="font-size:13px;color:var(--gray-400);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#D4601D'" onmouseout="this.style.color='var(--gray-400)'">Client Login</a>
+      <a href="javascript:void(0)" onclick="openPortal()" style="font-size:13px;color:var(--gray-400);text-decoration:none;cursor:pointer;">Client Login</a>
       <span style="color:var(--gray-200);">·</span>
-      <a href="javascript:void(0)" onclick="window.openAdminModal()" style="font-size:13px;color:var(--gray-200);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#D4601D'" onmouseout="this.style.color='var(--gray-200)'">Admin</a>
+      <a href="javascript:void(0)" onclick="openAdminModal()" style="font-size:13px;color:var(--gray-200);text-decoration:none;cursor:pointer;">Admin</a>
+
     </span>
   </div>
+
 </footer>
 
 <!-- LOGIN MODAL -->
@@ -505,7 +853,7 @@
       </div>
       <button onclick="doLogin()" style="background:var(--gold);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px;transition:background 0.2s;" onmouseover="this.style.background='var(--gold-light)'" onmouseout="this.style.background='var(--gold)'">Sign In</button>
     </div>
-    <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--gray-400);">Demo: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="751110181a3506011014110c161a1b0601070016011c1a1b5b1c10">[email&#160;protected]</a> / demo1234</p>
+    
   </div>
 </div>
 
@@ -632,10 +980,26 @@
           <textarea id="req-desc" rows="4" placeholder="Describe the issue in as much detail as possible — what happened, when it started, any relevant details..." style="width:100%;border:1px solid #e5e1dd;border-radius:10px;padding:12px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;background:#f7f8fa;resize:vertical;box-sizing:border-box;" onfocus="this.style.borderColor='#D4601D';this.style.background='#fff'" onblur="this.style.borderColor='#e5e1dd';this.style.background='#f7f8fa'"></textarea>
         </div>
 
-        <!-- Access time -->
+        <!-- Occupancy -->
         <div>
-          <label style="font-size:13px;font-weight:600;color:#4a5264;display:block;margin-bottom:6px;">Preferred Access Time</label>
-          <input type="text" id="req-access" placeholder="e.g. Weekday mornings, after 10am" style="width:100%;border:1px solid #e5e1dd;border-radius:10px;padding:12px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;background:#f7f8fa;box-sizing:border-box;" onfocus="this.style.borderColor='#D4601D';this.style.background='#fff'" onblur="this.style.borderColor='#e5e1dd';this.style.background='#f7f8fa'">
+          <label style="font-size:13px;font-weight:600;color:#4a5264;display:block;margin-bottom:6px;">Is the property occupied?</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:1px solid #e5e1dd;border-radius:9px;flex:1;min-width:140px;background:#f7f8fa;transition:all 0.15s;" id="occ-label-tenant">
+              <input type="radio" name="req-occupancy" value="Tenant in residence" id="occ-tenant" style="accent-color:#D4601D;" onchange="document.getElementById('occ-label-tenant').style.borderColor='#D4601D';document.getElementById('occ-label-tenant').style.background='#fff3ec';document.getElementById('occ-label-vacant').style.borderColor='#e5e1dd';document.getElementById('occ-label-vacant').style.background='#f7f8fa';">
+              <span style="font-size:13px;font-weight:500;color:#1a1a2e;">Tenant in residence</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:1px solid #e5e1dd;border-radius:9px;flex:1;min-width:140px;background:#f7f8fa;transition:all 0.15s;" id="occ-label-vacant">
+              <input type="radio" name="req-occupancy" value="Vacant" id="occ-vacant" style="accent-color:#D4601D;" onchange="document.getElementById('occ-label-vacant').style.borderColor='#D4601D';document.getElementById('occ-label-vacant').style.background='#fff3ec';document.getElementById('occ-label-tenant').style.borderColor='#e5e1dd';document.getElementById('occ-label-tenant').style.background='#f7f8fa';">
+              <span style="font-size:13px;font-weight:500;color:#1a1a2e;">Vacant</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Access instructions -->
+        <div>
+          <label style="font-size:13px;font-weight:600;color:#4a5264;display:block;margin-bottom:6px;">Access Instructions</label>
+          <textarea id="req-access" rows="2" placeholder="e.g. Key in lockbox at front door — code 4821. Tenant available after 2pm." style="width:100%;border:1px solid #e5e1dd;border-radius:10px;padding:12px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;background:#f7f8fa;resize:vertical;box-sizing:border-box;" onfocus="this.style.borderColor='#D4601D';this.style.background='#fff'" onblur="this.style.borderColor='#e5e1dd';this.style.background='#f7f8fa'"></textarea>
+          <div style="font-size:11px;color:#9199a8;margin-top:5px;">Key safe codes, who to contact, preferred arrival times</div>
         </div>
 
         <!-- File upload — real input, hidden, triggered by drop zone -->
@@ -656,6 +1020,845 @@
   </div>
 
 </div><!-- end portal-dashboard -->
+
+<script>
+/* ============================================================
+   STEADY CONSTRUCTION — CLIENT PORTAL
+   Zero innerHTML string building with onclick.
+   All interactivity uses DOM createElement + addEventListener.
+   ============================================================ */
+
+/* ── DATA ── */
+var portalTickets = [
+  { ref:'SC-2024-041', type:'Plumbing', priority:'Urgent',
+    address:'14 Maple Street, Dublin 6',
+    desc:'Leak under bathroom sink — water dripping from waste pipe connection. Started yesterday evening.',
+    status:'In Progress', contractor:'Plumber', scheduled:'Today 2:00 PM',
+    price:'EUR 220–380', paid:false, payRef:'', payStatus:'Awaiting Payment',
+    progress:3,
+    messages:[
+      {from:'system', text:'Ticket SC-2024-041 created.', time:'9:02 AM'},
+      {from:'team', text:'Hi John, our plumber will be there at 2pm today. He will call 30 minutes before arrival.', time:'9:45 AM', name:'Steady Team'},
+      {from:'client', text:'No problem — key safe at front door, code 1234.', time:'10:12 AM', name:'You'},
+      {from:'team', text:'On site now. Found the issue — faulty waste trap. Replacing now, about 30 minutes.', time:'2:15 PM', name:'Plumber'}
+    ]
+  },
+  { ref:'SC-2024-039', type:'Cleaning', priority:'Standard',
+    address:'8 Orchard Road, Dublin 4',
+    desc:'End-of-tenancy deep clean required. 3-bed apartment, tenants leaving on Wed 18 Mar.',
+    status:'Scheduled', contractor:'Cleaning Team', scheduled:'Thu 18 Mar, 9:00 AM',
+    price:'EUR 280', paid:false, payRef:'', payStatus:'Awaiting Payment',
+    progress:2,
+    messages:[
+      {from:'system', text:'Ticket SC-2024-039 created.', time:'Yesterday 4:00 PM'},
+      {from:'team', text:'Hi John, the clean is booked for Thursday at 9am. Estimated 4 hours.', time:'Yesterday 5:00 PM', name:'Steady Team'}
+    ]
+  },
+  { ref:'SC-2024-037', type:'Electrical', priority:'Standard',
+    address:'22 Pine Avenue, Dublin 4',
+    desc:'Full consumer unit upgrade — outdated fuse box replaced with modern RCD board.',
+    status:'Completed', contractor:'Electrician', scheduled:'10 Mar 2026',
+    price:'EUR 480', paid:false, payRef:'', payStatus:'Awaiting Payment',
+    progress:4,
+    messages:[
+      {from:'system', text:'Job completed on 10 Mar 2026. Invoice issued.', time:'10 Mar'},
+      {from:'team', text:'All done John. New RCD board fitted and tested. Certificate of compliance issued. Invoice to follow.', time:'10 Mar', name:'Electrician'}
+    ]
+  },
+  { ref:'SC-2024-031', type:'Roofing', priority:'Urgent',
+    address:'14 Maple Street, Dublin 6',
+    desc:'Roof repair — several slates displaced after storm damage. Repaired and sealed.',
+    status:'Completed', contractor:'Roofer', scheduled:'22 Feb 2026',
+    price:'EUR 1,250', paid:true, payRef:'REF-2024-1192', payStatus:'Paid',
+    progress:4,
+    messages:[
+      {from:'system', text:'Job completed.', time:'22 Feb'},
+      {from:'team', text:'All sorted John. 14 slates replaced and ridge repointed. Before and after photos attached.', time:'22 Feb', name:'Roofer'}
+    ]
+  }
+];
+
+/* ── HELPERS ── */
+var STATUS_COLOURS = {
+  'In Progress':      {bg:'#fff3ec', col:'#D4601D'},
+  'Scheduled':        {bg:'#eff6ff', col:'#2563eb'},
+  'Completed':        {bg:'#f0fdf4', col:'#16a34a'},
+  'Pending':          {bg:'#fafafa', col:'#9199a8'},
+  'Awaiting Payment': {bg:'#fffbeb', col:'#d97706'},
+  'Under Review':     {bg:'#f5f3ff', col:'#7c3aed'},
+  'Paid':             {bg:'#f0fdf4', col:'#16a34a'},
+  'Active':           {bg:'#f0fdf4', col:'#16a34a'},
+  'Inactive':         {bg:'#fafafa', col:'#9199a8'},
+  'Urgent':           {bg:'#fef2f2', col:'#dc2626'}
+};
+
+function mkEl(tag, styles, text) {
+  var e = document.createElement(tag);
+  if (styles) e.style.cssText = styles;
+  if (text !== undefined) e.textContent = String(text);
+  return e;
+}
+
+function mkPill(text) {
+  var s = STATUS_COLOURS[text] || {bg:'#f0f1f3', col:'#9199a8'};
+  var e = mkEl('span', 'font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;background:' + s.bg + ';color:' + s.col + ';white-space:nowrap;display:inline-block;', text);
+  return e;
+}
+
+/* ── AUTH ── */
+function openPortal() {
+  document.getElementById('portal-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closePortal() {
+  document.getElementById('portal-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function doLogin() {
+  var email = document.getElementById('portal-email').value.trim().toLowerCase();
+  var pass = document.getElementById('portal-password').value;
+  var err = document.getElementById('login-error');
+  if (email === 'demo@steadyconstruction.ie' && pass === 'demo1234') {
+    closePortal();
+    document.getElementById('portal-dashboard').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    initPortal();
+  } else {
+    err.style.display = 'block';
+    err.textContent = 'Incorrect email or password. Please check your details and try again.';
+  }
+}
+function logoutPortal() {
+  document.getElementById('portal-dashboard').style.display = 'none';
+  document.body.style.overflow = '';
+}
+window.addEventListener('load', function() {
+  var pw = document.getElementById('portal-password');
+  if (pw) pw.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+});
+
+/* ── NAV ── */
+function showPortalView(view) {
+  ['dashboard','tickets','payments','new-request'].forEach(function(v) {
+    var el = document.getElementById('pview-' + v);
+    var btn = document.getElementById('pnav-' + v);
+    if (el) el.style.display = 'none';
+    if (btn) { btn.style.background = 'transparent'; btn.style.color = '#9199a8'; btn.style.fontWeight = '500'; }
+  });
+  var active = document.getElementById('pview-' + view);
+  var activeBtn = document.getElementById('pnav-' + view);
+  if (active) active.style.display = 'block';
+  if (activeBtn) { activeBtn.style.background = '#D4601D'; activeBtn.style.color = '#fff'; activeBtn.style.fontWeight = '600'; }
+  if (view === 'tickets') { renderTicketList(); showTicketList(); }
+  if (view === 'payments') renderPayments();
+  if (view === 'dashboard') renderDashboard();
+}
+
+function initPortal() {
+  renderDashboard();
+  showPortalView('dashboard');
+}
+
+/* ── DASHBOARD ── */
+function renderDashboard() {
+  var active = portalTickets.filter(function(t){ return t.status==='In Progress'||t.status==='Scheduled'||t.status==='Pending'; });
+  var pendingPay = portalTickets.filter(function(t){ return !t.paid && t.status==='Completed'; });
+
+  var countEl = document.getElementById('dash-active-count');
+  var payCountEl = document.getElementById('dash-payment-count');
+  var kpiActive = document.getElementById('kpi-active');
+  var kpiPay = document.getElementById('kpi-payment');
+  if (countEl) countEl.textContent = active.length;
+  if (payCountEl) payCountEl.textContent = pendingPay.length;
+  if (kpiActive) kpiActive.textContent = active.length;
+  if (kpiPay) kpiPay.textContent = pendingPay.length;
+
+  /* Active job cards — DOM only */
+  var ajEl = document.getElementById('dash-active-jobs');
+  if (ajEl) {
+    ajEl.innerHTML = '';
+    if (!active.length) {
+      ajEl.appendChild(mkEl('div', 'background:#fff;border-radius:14px;padding:32px;text-align:center;color:#9199a8;border:1px solid #e5e1dd;', 'No active jobs at the moment.'));
+    } else {
+      active.forEach(function(t) {
+        var card = mkEl('div', 'background:#fff;border-radius:14px;padding:22px 24px;border:1px solid #e5e1dd;cursor:pointer;margin-bottom:12px;');
+        card.addEventListener('mouseover', function(){ card.style.borderColor='#D4601D'; card.style.boxShadow='0 4px 20px rgba(212,96,29,0.1)'; });
+        card.addEventListener('mouseout',  function(){ card.style.borderColor='#e5e1dd'; card.style.boxShadow='none'; });
+        card.addEventListener('click', function(){ openTicketDetail(t.ref); });
+
+        var top = mkEl('div', 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;');
+        var pillRow = mkEl('div', 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;');
+        pillRow.appendChild(mkEl('span', 'font-size:12px;font-weight:600;color:#9199a8;', t.ref));
+        pillRow.appendChild(mkPill(t.status));
+        var right = mkEl('div', 'text-align:right;font-size:12px;color:#9199a8;');
+        right.appendChild(mkEl('div', '', t.priority));
+        right.appendChild(mkEl('span', 'font-weight:500;color:#4a5264;', t.type));
+        top.appendChild(pillRow); top.appendChild(right);
+
+        var title = mkEl('div', 'font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:4px;', t.type + ' — ' + t.address);
+        var sub = mkEl('div', 'font-size:13px;color:#9199a8;margin-bottom:14px;', t.contractor + ' assigned · Scheduled: ' + t.scheduled);
+
+        var barCol = t.status==='Scheduled' ? '#2563eb' : '#D4601D';
+        var pct = Math.round((t.progress/4)*100);
+        var barWrap = mkEl('div', 'background:#f0f1f3;border-radius:4px;height:5px;overflow:hidden;margin-bottom:6px;');
+        barWrap.appendChild(mkEl('div', 'width:'+pct+'%;height:100%;background:'+barCol+';border-radius:4px;'));
+
+        var barLabel = mkEl('div', 'display:flex;justify-content:space-between;font-size:11px;color:#9199a8;');
+        barLabel.appendChild(mkEl('span', '', 'Job received'));
+        var mid = mkEl('span', 'color:'+barCol+';font-weight:600;', t.status);
+        barLabel.appendChild(mid);
+        barLabel.appendChild(mkEl('span', '', 'Completed'));
+
+        card.appendChild(top); card.appendChild(title); card.appendChild(sub);
+        card.appendChild(barWrap); card.appendChild(barLabel);
+        ajEl.appendChild(card);
+      });
+    }
+  }
+
+  /* Activity feed */
+  var acEl = document.getElementById('dash-activity');
+  if (acEl) {
+    var activities = [
+      {icon:'OK', text:'Job completed — Electrical upgrade, 22 Pine Ave', sub:'2 days ago · SC-2024-037', col:'#f0fdf4', tc:'#16a34a'},
+      {icon:'$',  text:'Invoice issued — EUR 480.00 due by 23 Mar', sub:'3 days ago · SC-2024-037', col:'#fff3ec', tc:'#D4601D'},
+      {icon:'P',  text:'Plumber assigned to SC-2024-041', sub:'Today · SC-2024-041', col:'#eff6ff', tc:'#2563eb'}
+    ];
+    acEl.innerHTML = '';
+    activities.forEach(function(a, i) {
+      var row = mkEl('div', 'padding:16px 20px;' + (i < activities.length-1 ? 'border-bottom:1px solid #f0f1f3;' : '') + 'display:flex;align-items:center;gap:14px;');
+      row.appendChild(mkEl('div', 'width:34px;height:34px;background:'+a.col+';border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:'+a.tc+';flex-shrink:0;', a.icon));
+      var info = mkEl('div', '');
+      info.appendChild(mkEl('div', 'font-size:14px;font-weight:500;color:#1a1a2e;', a.text));
+      info.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;margin-top:2px;', a.sub));
+      row.appendChild(info);
+      acEl.appendChild(row);
+    });
+  }
+}
+
+/* ── TICKET LIST ── */
+function renderTicketList() {
+  var search = ((document.getElementById('ticket-search')||{}).value||'').toLowerCase();
+  var statusF = (document.getElementById('ticket-status-filter')||{}).value||'';
+  var filtered = portalTickets.filter(function(t){
+    return (!search || t.ref.toLowerCase().includes(search) || t.type.toLowerCase().includes(search) || t.address.toLowerCase().includes(search) || t.desc.toLowerCase().includes(search))
+      && (!statusF || t.status===statusF);
+  });
+  var container = document.getElementById('ticket-list-items');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!filtered.length) {
+    container.appendChild(mkEl('div', 'background:#fff;border-radius:14px;padding:40px;text-align:center;color:#9199a8;border:1px solid #e5e1dd;', 'No tickets match your search.'));
+    return;
+  }
+  filtered.forEach(function(t) {
+    var card = mkEl('div', 'background:#fff;border-radius:14px;padding:20px 24px;border:1px solid #e5e1dd;margin-bottom:10px;cursor:pointer;');
+    card.addEventListener('mouseover', function(){ card.style.borderColor='#D4601D'; card.style.boxShadow='0 2px 12px rgba(212,96,29,0.08)'; });
+    card.addEventListener('mouseout',  function(){ card.style.borderColor='#e5e1dd'; card.style.boxShadow='none'; });
+    card.addEventListener('click', function(){ openTicketDetail(t.ref); });
+
+    var row = mkEl('div', 'display:flex;justify-content:space-between;align-items:flex-start;gap:12px;');
+    var left = mkEl('div', 'flex:1;min-width:0;');
+    var pills = mkEl('div', 'display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;');
+    pills.appendChild(mkEl('span', 'font-size:11px;font-weight:700;color:#9199a8;', t.ref));
+    pills.appendChild(mkPill(t.status));
+    left.appendChild(pills);
+    left.appendChild(mkEl('div', 'font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:4px;', t.type + ' — ' + t.address));
+    left.appendChild(mkEl('div', 'font-size:13px;color:#9199a8;', t.desc.substring(0,80) + '...'));
+    var right = mkEl('div', 'flex-shrink:0;text-align:right;');
+    right.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;', t.priority));
+    right.appendChild(mkEl('div', 'font-size:13px;font-weight:500;color:#4a5264;margin-top:2px;', t.type));
+    row.appendChild(left); row.appendChild(right);
+    card.appendChild(row);
+    container.appendChild(card);
+  });
+}
+
+function showTicketList() {
+  var lv = document.getElementById('ticket-list-view');
+  var dv = document.getElementById('ticket-detail-view');
+  if (lv) lv.style.display = 'block';
+  if (dv) dv.style.display = 'none';
+}
+
+/* ── TICKET DETAIL ── */
+function openTicketDetail(ref) {
+  var t = portalTickets.find(function(x){ return x.ref===ref; });
+  if (!t) return;
+  showPortalView('tickets');
+  var listView = document.getElementById('ticket-list-view');
+  var detailView = document.getElementById('ticket-detail-view');
+  if (listView) listView.style.display = 'none';
+  if (!detailView) return;
+  detailView.style.display = 'block';
+  detailView.innerHTML = '';
+  detailView.appendChild(buildTicketDetail(t));
+}
+
+function buildTicketDetail(t) {
+  var wrap = mkEl('div', '');
+
+  /* Back button */
+  var back = mkEl('button', 'background:none;border:none;cursor:pointer;font-size:13px;color:#9199a8;margin-bottom:20px;padding:0;font-family:"DM Sans",sans-serif;', '\u2190 Back to Tickets');
+  back.addEventListener('mouseover', function(){ back.style.color='#D4601D'; });
+  back.addEventListener('mouseout',  function(){ back.style.color='#9199a8'; });
+  back.addEventListener('click', function(){
+    document.getElementById('ticket-detail-view').style.display='none';
+    document.getElementById('ticket-list-view').style.display='block';
+    renderTicketList();
+  });
+  wrap.appendChild(back);
+
+  /* Header */
+  var header = mkEl('div', 'display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:24px;');
+  var hl = mkEl('div', '');
+  hl.appendChild(mkEl('div', 'font-size:12px;font-weight:700;color:#9199a8;margin-bottom:4px;', t.ref + ' · ' + t.type));
+  hl.appendChild(mkEl('h2', 'font-size:22px;font-family:"DM Serif Display",serif;color:#1a1a2e;margin-bottom:4px;', t.type + ' — ' + t.address));
+  hl.appendChild(mkEl('div', 'font-size:13px;color:#9199a8;', t.priority + ' priority'));
+  header.appendChild(hl);
+  header.appendChild(mkPill(t.status));
+  wrap.appendChild(header);
+
+  /* Info grid */
+  var grid = mkEl('div', 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;');
+  [['Contractor',t.contractor||'To be assigned'],['Scheduled',t.scheduled||'To be confirmed'],['Estimate',t.price||'Pending'],['Occupancy',t.occupancy||'Not specified'],['Access',t.accessInstructions||'See ticket notes'],['Trade',t.type]].forEach(function(inf){
+    var cell = mkEl('div', 'background:#fff;border-radius:12px;padding:14px 16px;border:1px solid #e5e1dd;');
+    cell.appendChild(mkEl('div', 'font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:4px;', inf[0]));
+    cell.appendChild(mkEl('div', 'font-size:13px;font-weight:600;color:#1a1a2e;', inf[1]));
+    grid.appendChild(cell);
+  });
+  wrap.appendChild(grid);
+
+  /* Progress bar */
+  var stageNames = ['Received','Assigned','Scheduled','In Progress','Completed'];
+  var progressBox = mkEl('div', 'background:#fff;border-radius:14px;padding:20px 24px;border:1px solid #e5e1dd;margin-bottom:24px;');
+  progressBox.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:16px;', 'Job Progress'));
+  var stageRow = mkEl('div', 'display:flex;align-items:flex-start;');
+  stageNames.forEach(function(s, i) {
+    var done = i < t.progress, active = i === t.progress;
+    var stageWrap = mkEl('div', 'display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;');
+    var lineRow = mkEl('div', 'display:flex;align-items:center;width:100%;');
+    var circleBg = active ? '#D4601D' : (done ? '#1a1a2e' : '#dde0e6');
+    var circle = mkEl('div', 'width:20px;height:20px;border-radius:50%;background:'+circleBg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;');
+    if (done) {
+      var tick = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      tick.setAttribute('width','12'); tick.setAttribute('height','12'); tick.setAttribute('viewBox','0 0 12 12');
+      var poly = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+      poly.setAttribute('points','2,6 5,9 10,3'); poly.setAttribute('stroke','#fff'); poly.setAttribute('stroke-width','1.8'); poly.setAttribute('fill','none'); poly.setAttribute('stroke-linecap','round');
+      tick.appendChild(poly); circle.appendChild(tick);
+    } else if (active) {
+      circle.appendChild(mkEl('span', 'color:#fff;font-size:8px;font-weight:700;', '>'));
+    }
+    lineRow.appendChild(circle);
+    if (i < stageNames.length-1) {
+      lineRow.appendChild(mkEl('div', 'flex:1;height:2px;background:'+(done && t.progress>i?'#D4601D':'#dde0e6')+';margin-top:0;'));
+    }
+    stageWrap.appendChild(lineRow);
+    stageWrap.appendChild(mkEl('div', 'font-size:9px;font-weight:'+(active?'700':'400')+';color:'+(active?'#D4601D':(done?'#1a1a2e':'#9199a8'))+';margin-top:6px;text-align:center;', s));
+    stageRow.appendChild(stageWrap);
+  });
+  progressBox.appendChild(stageRow);
+  wrap.appendChild(progressBox);
+
+  /* Description */
+  var descBox = mkEl('div', 'background:#fff;border-radius:14px;padding:20px 24px;border:1px solid #e5e1dd;margin-bottom:24px;');
+  descBox.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px;', 'Issue Description'));
+  descBox.appendChild(mkEl('div', 'font-size:13px;color:#4a5264;line-height:1.6;', t.desc));
+  wrap.appendChild(descBox);
+
+  /* Chat */
+  var chatBox = mkEl('div', 'background:#fff;border-radius:14px;border:1px solid #e5e1dd;overflow:hidden;margin-bottom:24px;');
+  var chatHdr = mkEl('div', 'padding:16px 20px;border-bottom:1px solid #f0f1f3;');
+  chatHdr.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#1a1a2e;', 'Messages'));
+  chatHdr.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;', 'Replies go directly to your team'));
+  chatBox.appendChild(chatHdr);
+
+  var chatThread = mkEl('div', 'padding:16px 20px;background:#f7f8fa;min-height:80px;max-height:320px;overflow-y:auto;');
+  chatThread.id = 'chat-thread-' + t.ref;
+  appendMessages(chatThread, t.messages);
+  chatBox.appendChild(chatThread);
+
+  var chatFoot = mkEl('div', 'padding:14px 16px;border-top:1px solid #f0f1f3;display:flex;gap:10px;');
+  var chatInput = document.createElement('input');
+  chatInput.type = 'text';
+  chatInput.id = 'chat-input-' + t.ref;
+  chatInput.placeholder = 'Type a message...';
+  chatInput.style.cssText = 'flex:1;border:1px solid #e5e1dd;border-radius:8px;padding:10px 14px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;';
+  chatInput.addEventListener('focus', function(){ chatInput.style.borderColor='#D4601D'; });
+  chatInput.addEventListener('blur',  function(){ chatInput.style.borderColor='#e5e1dd'; });
+  chatInput.addEventListener('keydown', function(e){ if(e.key==='Enter') sendPortalMsg(t.ref); });
+  var sendBtn = mkEl('button', 'background:#D4601D;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap;', 'Send');
+  sendBtn.addEventListener('click', function(){ sendPortalMsg(t.ref); });
+  chatFoot.appendChild(chatInput); chatFoot.appendChild(sendBtn);
+  chatBox.appendChild(chatFoot);
+  wrap.appendChild(chatBox);
+
+  /* Cancel ticket section — only show if not completed/closed/cancelled */
+  if (t.status !== 'Completed' && t.status !== 'Closed' && t.status !== 'Cancellation Accepted') {
+    wrap.appendChild(buildCancelSection(t));
+  } else if (t.status === 'Cancellation Requested') {
+    wrap.appendChild(buildCancelSection(t));
+  }
+
+  /* Payment section */
+  wrap.appendChild(buildPaymentSection(t));
+  setTimeout(function(){ chatThread.scrollTop = chatThread.scrollHeight; }, 50);
+  return wrap;
+}
+
+function appendMessages(thread, messages) {
+  if (!messages || !messages.length) {
+    thread.appendChild(mkEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet.'));
+    return;
+  }
+  messages.forEach(function(m) {
+    if (m.from === 'system') {
+      var sys = mkEl('div', 'text-align:center;margin:8px 0;');
+      sys.appendChild(mkEl('span', 'font-size:11px;color:#9199a8;background:#f0f1f3;padding:3px 12px;border-radius:100px;', m.text + ' - ' + m.time));
+      thread.appendChild(sys);
+    } else if (m.from === 'photo') {
+      var row = mkEl('div', 'display:flex;justify-content:flex-end;margin-bottom:12px;');
+      var bubble = mkEl('div', 'max-width:72%;background:#fff;border:1px solid #e5e1dd;border-radius:14px 14px 4px 14px;padding:10px 14px;');
+      bubble.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;margin-bottom:6px;', 'Photo attached'));
+      var chip = mkEl('div', 'background:#eff6ff;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;');
+      chip.appendChild(mkEl('div', 'width:28px;height:28px;background:#2563eb;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;', 'IMG'));
+      chip.appendChild(mkEl('div', 'font-size:12px;font-weight:500;color:#1a1a2e;', m.text));
+      bubble.appendChild(chip);
+      if (m.fileObj) {
+        try {
+          var img = document.createElement('img');
+          img.src = URL.createObjectURL(m.fileObj); img.alt = m.text;
+          img.style.cssText = 'width:100%;max-width:220px;border-radius:8px;margin-top:6px;display:block;cursor:pointer;';
+          img.onclick = function() { window.open(img.src, '_blank'); };
+          bubble.appendChild(img);
+        } catch(e) {}
+      }
+      bubble.appendChild(mkEl('div', 'font-size:11px;color:#9199a8;margin-top:6px;', (m.name||'You') + ' - ' + m.time));
+      row.appendChild(bubble); thread.appendChild(row);
+    } else {
+      var isClient = m.from === 'client';
+      var row2 = mkEl('div', 'display:flex;' + (isClient ? 'justify-content:flex-end;' : '') + 'margin-bottom:12px;');
+      var bubble2 = mkEl('div', 'max-width:72%;background:'+(isClient?'#D4601D':'#fff')+';color:'+(isClient?'#fff':'#1a1a2e')+';border-radius:'+(isClient?'14px 14px 4px 14px':'14px 14px 14px 4px')+';padding:12px 16px;border:'+(isClient?'none':'1px solid #e5e1dd')+';');
+      bubble2.appendChild(mkEl('div', 'font-size:13px;line-height:1.5;', m.text));
+      bubble2.appendChild(mkEl('div', 'font-size:11px;'+(isClient?'color:rgba(255,255,255,0.65)':'color:#9199a8')+';margin-top:6px;', (m.name||m.from) + ' - ' + m.time));
+      row2.appendChild(bubble2); thread.appendChild(row2);
+    }
+  });
+}
+
+function sendPortalMsg(ref) {
+  var t = portalTickets.find(function(x){ return x.ref===ref; });
+  var input = document.getElementById('chat-input-' + ref);
+  if (!t || !input) return;
+  var msg = input.value.trim();
+  if (!msg) return;
+  t.messages.push({from:'client', text:msg, time:'Just now', name:'You'});
+  input.value = '';
+  var thread = document.getElementById('chat-thread-' + ref);
+  if (thread) {
+    var row = mkEl('div', 'display:flex;justify-content:flex-end;margin-bottom:12px;');
+    var bubble = mkEl('div', 'max-width:72%;background:#D4601D;color:#fff;border-radius:14px 14px 4px 14px;padding:12px 16px;');
+    bubble.appendChild(mkEl('div', 'font-size:13px;line-height:1.5;', msg));
+    bubble.appendChild(mkEl('div', 'font-size:11px;color:rgba(255,255,255,0.65);margin-top:6px;', 'You · Just now'));
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    thread.scrollTop = thread.scrollHeight;
+  }
+  /* Sync to admin */
+  if (typeof adminTickets !== 'undefined') {
+    var at = adminTickets.find(function(x){ return x.ref===ref; });
+    if (at) at.messages.push({from:'client', text:msg, time:'Just now', name:'John Murphy'});
+  }
+}
+
+/* ── PAYMENT SECTION ── */
+function buildPaymentSection(t) {
+  var wrap = mkEl('div', '');
+  if (t.payStatus === 'Paid') {
+    var paidBox = mkEl('div', 'background:#f0fdf4;border:1.5px solid #16a34a;border-radius:14px;padding:20px 22px;');
+    var pr = mkEl('div', 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;');
+    var pl = mkEl('div', '');
+    pl.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#16a34a;margin-bottom:4px;', 'Payment Confirmed'));
+    pl.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;', 'Ref: ' + t.payRef + ' · Verified by admin'));
+    pr.appendChild(pl);
+    pr.appendChild(mkEl('div', 'font-size:22px;font-family:"DM Serif Display",serif;color:#16a34a;', t.price));
+    paidBox.appendChild(pr);
+    wrap.appendChild(paidBox);
+  } else if (t.payStatus === 'Under Review') {
+    var revBox = mkEl('div', 'background:#f5f3ff;border:1.5px solid #7c3aed;border-radius:14px;padding:20px 22px;');
+    var rr2 = mkEl('div', 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;');
+    var rl = mkEl('div', '');
+    rl.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#7c3aed;margin-bottom:4px;', 'Payment Under Review'));
+    rl.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;', 'Ref submitted: ' + t.payRef + ' · Admin cross-referencing'));
+    rr2.appendChild(rl);
+    rr2.appendChild(mkEl('div', 'font-size:20px;font-family:"DM Serif Display",serif;color:#1a1a2e;', t.price));
+    revBox.appendChild(rr2);
+    revBox.appendChild(mkEl('div', 'font-size:12px;color:#7c3aed;', 'Our team will confirm your payment within 1 business day. You will be notified by email.'));
+    wrap.appendChild(revBox);
+  } else if (t.status === 'Completed' || t.payStatus === 'Awaiting Payment') {
+    var invBox = mkEl('div', 'background:#fff;border:1px solid #e5e1dd;border-radius:14px;padding:24px;');
+    /* Invoice header */
+    var invHead = mkEl('div', 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;');
+    var invL = mkEl('div', '');
+    invL.appendChild(mkEl('div', 'font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:2px;', 'Invoice — ' + t.ref));
+    invL.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;', 'Completed job · Due within 5 days'));
+    var invR = mkEl('div', 'text-align:right;');
+    invR.appendChild(mkEl('div', 'font-size:22px;font-family:"DM Serif Display",serif;color:#1a1a2e;', t.price));
+    invR.appendChild(mkPill('Awaiting Payment'));
+    invHead.appendChild(invL); invHead.appendChild(invR);
+    invBox.appendChild(invHead);
+
+    /* Log payment form */
+    var formWrap = mkEl('div', 'background:#f7f8fa;border-radius:10px;padding:18px;border:1px solid #e5e1dd;margin-bottom:16px;');
+    formWrap.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px;', 'Log Your Bank Transfer'));
+    formWrap.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;margin-bottom:14px;line-height:1.5;', 'Make your bank transfer to us, then enter the reference below. Our admin will cross-reference and confirm within 1 business day.'));
+
+    var fgrid = mkEl('div', 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;');
+    var refWrap = mkEl('div', '');
+    refWrap.appendChild(mkEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;', 'Bank Transfer Reference'));
+    var refInput = document.createElement('input');
+    refInput.type = 'text'; refInput.id = 'pay-ref-' + t.ref; refInput.placeholder = 'e.g. REF-2024-78241';
+    refInput.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;';
+    refInput.addEventListener('focus', function(){ refInput.style.borderColor='#D4601D'; });
+    refInput.addEventListener('blur',  function(){ refInput.style.borderColor='#e5e1dd'; });
+    refWrap.appendChild(refInput);
+    var amtWrap = mkEl('div', '');
+    amtWrap.appendChild(mkEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;', 'Amount Transferred'));
+    var amtInput = document.createElement('input');
+    amtInput.type = 'text'; amtInput.id = 'pay-amt-' + t.ref; amtInput.placeholder = 'e.g. EUR 220.00';
+    amtInput.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;';
+    amtInput.addEventListener('focus', function(){ amtInput.style.borderColor='#D4601D'; });
+    amtInput.addEventListener('blur',  function(){ amtInput.style.borderColor='#e5e1dd'; });
+    amtWrap.appendChild(amtInput);
+    fgrid.appendChild(refWrap); fgrid.appendChild(amtWrap);
+    formWrap.appendChild(fgrid);
+
+    var dateWrap = mkEl('div', 'margin-bottom:14px;');
+    dateWrap.appendChild(mkEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;', 'Date of Transfer'));
+    var dateInput = document.createElement('input');
+    dateInput.type = 'text'; dateInput.placeholder = 'e.g. 18 March 2026';
+    dateInput.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;';
+    dateInput.addEventListener('focus', function(){ dateInput.style.borderColor='#D4601D'; });
+    dateInput.addEventListener('blur',  function(){ dateInput.style.borderColor='#e5e1dd'; });
+    dateWrap.appendChild(dateInput);
+    formWrap.appendChild(dateWrap);
+
+    var submitBtn = mkEl('button', 'background:#D4601D;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;width:100%;', 'I have made this payment');
+    submitBtn.addEventListener('mouseover', function(){ submitBtn.style.background='#e87a3a'; });
+    submitBtn.addEventListener('mouseout',  function(){ submitBtn.style.background='#D4601D'; });
+    submitBtn.addEventListener('click', function(){ submitPayment(t.ref); });
+    formWrap.appendChild(submitBtn);
+    invBox.appendChild(formWrap);
+    wrap.appendChild(invBox);
+  }
+  return wrap;
+}
+
+function submitPayment(ref) {
+  var t = portalTickets.find(function(x){ return x.ref===ref; });
+  var refInput = document.getElementById('pay-ref-' + ref);
+  if (!t || !refInput) return;
+  var payRef = refInput.value.trim();
+  if (!payRef) { refInput.style.borderColor='#dc2626'; refInput.placeholder='Please enter your bank reference'; return; }
+  t.payRef = payRef;
+  t.payStatus = 'Under Review';
+  openTicketDetail(ref);
+  renderDashboard();
+}
+
+/* ── PAYMENTS TAB ── */
+function renderPayments() {
+  var container = document.getElementById('payments-content');
+  if (!container) return;
+  container.innerHTML = '';
+
+  var tableWrap = mkEl('div', 'background:#fff;border-radius:14px;border:1px solid #e5e1dd;overflow:hidden;');
+  /* Header */
+  var hdr = mkEl('div', 'padding:12px 20px;background:#f7f8fa;display:flex;gap:10px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;border-bottom:1px solid #e5e1dd;');
+  ['Job','Property','Amount','Status','Action'].forEach(function(h, i){
+    hdr.appendChild(mkEl('div', 'flex:'+(i<2?'2':'1')+';', h));
+  });
+  tableWrap.appendChild(hdr);
+
+  portalTickets.forEach(function(t) {
+    var row = mkEl('div', 'padding:16px 20px;border-bottom:1px solid #f0f1f3;display:flex;gap:10px;align-items:center;');
+    var jobCol = mkEl('div', 'flex:2;');
+    jobCol.appendChild(mkEl('div', 'font-size:13px;font-weight:600;color:#1a1a2e;', t.type));
+    jobCol.appendChild(mkEl('div', 'font-size:11px;color:#9199a8;', t.ref));
+    row.appendChild(jobCol);
+    row.appendChild(mkEl('div', 'flex:2;font-size:13px;color:#4a5264;', t.address.substring(0,26)+'...'));
+    row.appendChild(mkEl('div', 'flex:1;font-size:14px;font-weight:700;color:#1a1a2e;', t.price));
+    var statusCol = mkEl('div', 'flex:1;');
+    statusCol.appendChild(mkPill(t.payStatus||'Awaiting Payment'));
+    row.appendChild(statusCol);
+    var actCol = mkEl('div', 'flex:1;');
+    var viewBtn = mkEl('button', 'background:#f0f1f3;color:#1a1a2e;border:none;padding:6px 14px;border-radius:7px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'View Job');
+    viewBtn.addEventListener('click', function(){ openTicketDetail(t.ref); });
+    actCol.appendChild(viewBtn);
+    row.appendChild(actCol);
+    tableWrap.appendChild(row);
+  });
+  container.appendChild(tableWrap);
+}
+
+/* ── FILE UPLOAD SETUP ── */
+window.addEventListener('load', function() {
+  var dropZone = document.getElementById('req-drop-zone');
+  var fileInput = document.getElementById('req-file-input');
+  if (!dropZone || !fileInput) return;
+
+  /* Click zone → open file picker */
+  dropZone.addEventListener('click', function() { fileInput.click(); });
+
+  /* File input change */
+  fileInput.addEventListener('change', function() {
+    handleFiles(fileInput.files);
+  });
+
+  /* Drag over */
+  dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropZone.style.borderColor = '#D4601D';
+    dropZone.style.background = '#fff3ec';
+  });
+
+  /* Drag leave */
+  dropZone.addEventListener('dragleave', function() {
+    dropZone.style.borderColor = '#e5e1dd';
+    dropZone.style.background = '#f7f8fa';
+  });
+
+  /* Drop */
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.style.borderColor = '#e5e1dd';
+    dropZone.style.background = '#f7f8fa';
+    handleFiles(e.dataTransfer.files);
+  });
+});
+
+var uploadedFiles = [];
+
+function handleFiles(files) {
+  var list = document.getElementById('req-file-list');
+  if (!list) return;
+  Array.prototype.forEach.call(files, function(file) {
+    uploadedFiles.push(file);
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#f7f8fa;border:1px solid #e5e1dd;border-radius:8px;padding:8px 12px;';
+    var left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    var icon = document.createElement('div');
+    icon.style.cssText = 'width:28px;height:28px;background:#eff6ff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#2563eb;font-weight:700;flex-shrink:0;';
+    icon.textContent = file.type.includes('pdf') ? 'PDF' : 'IMG';
+    var nameDiv = document.createElement('div');
+    var fname = document.createElement('div');
+    fname.style.cssText = 'font-size:13px;font-weight:500;color:#1a1a2e;';
+    fname.textContent = file.name;
+    var fsize = document.createElement('div');
+    fsize.style.cssText = 'font-size:11px;color:#9199a8;';
+    fsize.textContent = (file.size / 1024).toFixed(0) + ' KB';
+    nameDiv.appendChild(fname); nameDiv.appendChild(fsize);
+    left.appendChild(icon); left.appendChild(nameDiv);
+    var removeBtn = document.createElement('button');
+    removeBtn.style.cssText = 'background:none;border:none;cursor:pointer;color:#9199a8;font-size:18px;line-height:1;padding:0 2px;';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.addEventListener('click', function() {
+      uploadedFiles = uploadedFiles.filter(function(f) { return f !== file; });
+      list.removeChild(row);
+    });
+    row.appendChild(left); row.appendChild(removeBtn);
+    list.appendChild(row);
+  });
+
+  /* Update drop zone text */
+  var dropZone = document.getElementById('req-drop-zone');
+  if (dropZone && uploadedFiles.length) {
+    dropZone.querySelector('div:nth-child(2)').textContent = uploadedFiles.length + ' file' + (uploadedFiles.length > 1 ? 's' : '') + ' selected — click to add more';
+  }
+}
+
+/* ── NEW REQUEST SUBMIT ── */
+function submitNewRequest() {
+  var address = (document.getElementById('req-address') || {}).value || '';
+  var desc = (document.getElementById('req-desc') || {}).value || '';
+
+  if (!address.trim()) {
+    var addrInput = document.getElementById('req-address');
+    if (addrInput) { addrInput.style.borderColor = '#dc2626'; addrInput.focus(); addrInput.placeholder = 'Please enter the property address'; }
+    return;
+  }
+  if (!desc.trim()) {
+    var descInput = document.getElementById('req-desc');
+    if (descInput) { descInput.style.borderColor = '#dc2626'; descInput.focus(); descInput.placeholder = 'Please describe the issue'; }
+    return;
+  }
+
+  var ref = 'SC-2026-0' + String(Math.floor(Math.random()*90)+10);
+  var service = (document.getElementById('req-service') || {}).value || 'General';
+  var priority = (document.getElementById('req-priority') || {}).value || 'Standard';
+  var accessText = (document.getElementById('req-access') || {}).value || '';
+  var occRadio = document.querySelector('input[name="req-occupancy"]:checked');
+  var occupancy = occRadio ? occRadio.value : 'Not specified';
+  var now = new Date();
+  var timeStr = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  /* Build initial messages — include uploaded photos */
+  var initMessages = [
+    { from:'system', text:'Ticket ' + ref + ' created. Team notified.', time: timeStr }
+  ];
+
+  /* Add details summary message */
+  var detailText = 'Occupancy: ' + occupancy + (accessText ? ' | Access: ' + accessText : '');
+  initMessages.push({ from:'client', text: detailText, time: timeStr, name:'You' });
+
+  /* Add photo messages into the chat thread */
+  uploadedFiles.forEach(function(file, i) {
+    initMessages.push({
+      from: 'photo',
+      text: file.name,
+      fileObj: file,
+      time: timeStr,
+      name: 'You'
+    });
+  });
+
+  portalTickets.unshift({
+    ref: ref, type: service, priority: priority,
+    address: address.trim(),
+    desc: desc.trim(),
+    occupancy: occupancy,
+    accessInstructions: accessText.trim(),
+    status: 'Pending', contractor: '', scheduled: 'To be confirmed',
+    price: 'Pending quote', paid: false, payRef: '', payStatus: 'Awaiting Payment',
+    progress: 0,
+    messages: initMessages,
+    cancelRequest: null  /* { reason, status: 'Pending Review' | 'Accepted' | 'Rejected', adminComment } */
+  });
+
+  var msg = document.getElementById('new-req-success');
+  if (msg) {
+    msg.style.display = 'block';
+    msg.textContent = 'Request submitted — Reference: ' + ref + '. Your team will be in touch shortly to confirm.';
+  }
+
+  ['req-address','req-desc','req-access'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) { el.value = ''; el.style.borderColor = '#e5e1dd'; }
+  });
+  /* Reset occupancy radio */
+  document.querySelectorAll('input[name="req-occupancy"]').forEach(function(r){ r.checked = false; });
+  ['occ-label-tenant','occ-label-vacant'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el){ el.style.borderColor='#e5e1dd'; el.style.background='#f7f8fa'; }
+  });
+  var fileList = document.getElementById('req-file-list');
+  if (fileList) fileList.innerHTML = '';
+  var fileInput = document.getElementById('req-file-input');
+  if (fileInput) fileInput.value = '';
+  uploadedFiles = [];
+  var dropZone = document.getElementById('req-drop-zone');
+  if (dropZone) {
+    var inner = dropZone.querySelector('div:nth-child(2)');
+    if (inner) inner.textContent = 'Click to choose files or drag and drop here';
+  }
+
+  renderDashboard();
+  setTimeout(function() { var m = document.getElementById('new-req-success'); if (m) m.style.display = 'none'; }, 10000);
+}
+
+/* ── CANCEL TICKET ── */
+function buildCancelSection(t) {
+  var wrap = mkEl('div', 'margin-top:8px;');
+
+  if (t.cancelRequest) {
+    var cr = t.cancelRequest;
+    var isPending = cr.status === 'Pending Review';
+    var isAccepted = cr.status === 'Accepted';
+    var isRejected = cr.status === 'Rejected';
+    var bgCol = isPending ? '#f5f3ff' : isAccepted ? '#f0fdf4' : '#fff3ec';
+    var bdCol = isPending ? '#7c3aed' : isAccepted ? '#16a34a' : '#D4601D';
+    var txCol = isPending ? '#7c3aed' : isAccepted ? '#16a34a' : '#D4601D';
+    var box = mkEl('div', 'background:'+bgCol+';border:1.5px solid '+bdCol+';border-radius:14px;padding:18px 20px;');
+    box.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:'+txCol+';margin-bottom:6px;',
+      isPending ? 'Cancellation Request — Under Review' :
+      isAccepted ? 'Cancellation Accepted' : 'Cancellation Request Declined'));
+    box.appendChild(mkEl('div', 'font-size:13px;color:#4a5264;margin-bottom:4px;', 'Your reason: ' + cr.reason));
+    if (cr.adminComment) {
+      box.appendChild(mkEl('div', 'font-size:13px;color:#4a5264;margin-top:6px;padding-top:6px;border-top:1px solid '+bdCol+';opacity:0.7;',
+        'Admin note: ' + cr.adminComment));
+    }
+    if (isPending) {
+      box.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;margin-top:8px;', 'Our team will review this shortly and be in touch.'));
+    }
+    wrap.appendChild(box);
+  } else {
+    /* Show cancel button */
+    var canBtn = mkEl('button', 'background:none;border:1px solid #e5e1dd;color:#9199a8;padding:8px 18px;border-radius:8px;font-size:13px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Request Cancellation');
+    canBtn.addEventListener('mouseover', function(){ canBtn.style.borderColor='#dc2626'; canBtn.style.color='#dc2626'; });
+    canBtn.addEventListener('mouseout',  function(){ canBtn.style.borderColor='#e5e1dd'; canBtn.style.color='#9199a8'; });
+    canBtn.addEventListener('click', function() { showCancelForm(t.ref, wrap, canBtn); });
+    wrap.appendChild(canBtn);
+  }
+  return wrap;
+}
+
+function showCancelForm(ref, wrap, canBtn) {
+  canBtn.style.display = 'none';
+  var form = mkEl('div', 'background:#fef2f2;border:1.5px solid #dc2626;border-radius:14px;padding:18px 20px;margin-top:4px;');
+  form.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#dc2626;margin-bottom:10px;', 'Request Ticket Cancellation'));
+  form.appendChild(mkEl('div', 'font-size:13px;color:#4a5264;margin-bottom:10px;line-height:1.5;', 'Please tell us why you no longer need this job. Our team will review and confirm.'));
+  var textarea = document.createElement('textarea');
+  textarea.rows = 3; textarea.placeholder = 'Reason for cancellation...';
+  textarea.style.cssText = 'width:100%;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;background:#fff;resize:vertical;box-sizing:border-box;margin-bottom:10px;';
+  textarea.addEventListener('focus', function(){ textarea.style.borderColor='#dc2626'; });
+  form.appendChild(textarea);
+  var row = mkEl('div', 'display:flex;gap:10px;');
+  var submitBtn = mkEl('button', 'background:#dc2626;color:#fff;border:none;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Submit Request');
+  submitBtn.addEventListener('click', function() {
+    var reason = textarea.value.trim();
+    if (!reason) { textarea.style.borderColor='#dc2626'; textarea.focus(); return; }
+    requestCancellation(ref, reason);
+    openTicketDetail(ref); /* re-render */
+  });
+  var cancelBtn = mkEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:9px 20px;border-radius:8px;font-size:13px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Never mind');
+  cancelBtn.addEventListener('click', function() { form.remove(); canBtn.style.display=''; });
+  row.appendChild(submitBtn); row.appendChild(cancelBtn);
+  form.appendChild(row);
+  wrap.appendChild(form);
+}
+
+function requestCancellation(ref, reason) {
+  var t = portalTickets.find(function(x){ return x.ref===ref; });
+  if (!t) return;
+  t.cancelRequest = { reason: reason, status: 'Pending Review', adminComment: '' };
+  t.status = 'Cancellation Requested';
+  /* Sync to admin */
+  if (typeof adminTickets !== 'undefined') {
+    var at = adminTickets.find(function(x){ return x.ref===ref; });
+    if (at) { at.cancelRequest = t.cancelRequest; at.status = 'Cancellation Requested'; }
+  }
+}
+
+/* ── EXPOSE GLOBALS ── */
+window.openPortal = openPortal;
+window.closePortal = closePortal;
+window.doLogin = doLogin;
+window.logoutPortal = logoutPortal;
+window.showPortalView = showPortalView;
+window.openTicketDetail = openTicketDetail;
+window.sendPortalMsg = sendPortalMsg;
+window.submitPayment = submitPayment;
+window.renderTicketList = renderTicketList;
+window.submitNewRequest = submitNewRequest;
+</script>
+
+
+
+
+
+
+
 
 <!-- ADMIN LOGIN MODAL -->
 <div id="admin-modal" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(28,28,28,0.8);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
@@ -678,7 +1881,7 @@
       </div>
       <button onclick="window.doAdminLogin()" style="background:#D4601D;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px;transition:background 0.2s;" onmouseover="this.style.background='#e87a3a'" onmouseout="this.style.background='#D4601D'">Sign In →</button>
     </div>
-    
+    <p style="text-align:center;margin-top:20px;font-size:13px;color:rgba(255,255,255,0.25);">Demo: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ff9e9b929691bf8c8b9a9e9b869c90918c8b8d8a9c8b969091d1969a">[email&#160;protected]</a> / admin1234</p>
   </div>
 </div>
 
@@ -708,7 +1911,7 @@
   </div>
 
   <!-- OVERVIEW TAB -->
-  <div id="admin-a-overview" style="padding:28px 24px;max-width:1400px;margin:0 auto;">
+    <div id="admin-a-overview" style="padding:28px 24px;max-width:1400px;margin:0 auto;">
     <div style="margin-bottom:24px;">
       <h2 style="font-size:22px;color:var(--navy);margin-bottom:4px;">Operations Dashboard</h2>
       <p style="font-size:14px;color:var(--gray-600);">Live view of all tickets by status — click any card to open and edit</p>
@@ -807,7 +2010,6 @@
       <div id="admin-activity-log"></div>
     </div>
   </div>
-
   <!-- ALL TICKETS TAB -->
   <div id="admin-a-tickets" style="display:none;padding:28px 24px;max-width:1200px;margin:0 auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
@@ -907,5 +2109,12 @@
 <script src="js/site.js"></script>
 <script src="js/portal.js"></script>
 <script src="js/admin.js"></script>
+
+
+
+
+
+
+
 </body>
 </html>
