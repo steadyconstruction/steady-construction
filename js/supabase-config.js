@@ -135,7 +135,7 @@ function mapSupaTicketsToAdmin(rows) {
     var existing = prev.find(function(t){ return t.ref === r.ref; });
     /* If admin saved this ticket within the last 60s, keep local editable fields
        so the poll does not overwrite an in-flight or recently committed save. */
-    if (existing && existing._savedAt && (now - existing._savedAt) < 60000) {
+    if (existing && existing._savedAt && (now - existing._savedAt) < 300000) {
       existing._id      = r.id;
       existing._clientId = r.client_id || '';
       return existing;
