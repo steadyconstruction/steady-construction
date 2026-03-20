@@ -1770,7 +1770,9 @@ function submitNewRequest() {
         priority: priority,
         description: desc.trim(),
         status: 'Pending'
-      }]).then(function(){});
+      }]).then(function(r){
+        if (r && r.error) console.error('Ticket insert error:', r.error);
+      });
     }
   }
 
