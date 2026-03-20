@@ -1918,9 +1918,12 @@ window.submitNewRequest = submitNewRequest;
       <button onclick="switchAdminTab('a-contractors')" id="atab-a-contractors" class="atab" style="padding:7px 14px;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:rgba(255,255,255,0.55);font-family:'DM Sans',sans-serif;white-space:nowrap;">Contractors</button>
       <button onclick="switchAdminTab('a-payments')" id="atab-a-payments" class="atab" style="padding:7px 14px;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:rgba(255,255,255,0.55);font-family:'DM Sans',sans-serif;white-space:nowrap;">Payments</button>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="window.logoutAdmin()">
-      <div style="width:32px;height:32px;background:#D4601D;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:600;">A</div>
-      <span style="font-size:13px;color:rgba(255,255,255,0.5);">Sign Out</span>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="admin-refresh-btn" onclick="refreshAdminData(false)" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">⟳ Refresh</button>
+      <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="window.logoutAdmin()">
+        <div style="width:32px;height:32px;background:#D4601D;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:600;">A</div>
+        <span style="font-size:13px;color:rgba(255,255,255,0.5);">Sign Out</span>
+      </div>
     </div>
   </div>
 
@@ -2109,8 +2112,8 @@ window.submitNewRequest = submitNewRequest;
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
       <h2 style="font-size:22px;color:var(--navy);">Payment Management</h2>
       <div style="display:flex;gap:14px;font-size:13px;">
-        <div style="background:#fff3ec;color:#D4601D;padding:8px 16px;border-radius:8px;font-weight:600;">Unpaid: €760.00</div>
-        <div style="background:#f0fdf4;color:#16a34a;padding:8px 16px;border-radius:8px;font-weight:600;">Paid this month: €4,280.00</div>
+        <div id="payments-unpaid-summary" style="background:#fff3ec;color:#D4601D;padding:8px 16px;border-radius:8px;font-weight:600;">Unpaid: €0.00</div>
+        <div id="payments-paid-summary" style="background:#f0fdf4;color:#16a34a;padding:8px 16px;border-radius:8px;font-weight:600;">Paid this month: €0.00</div>
       </div>
     </div>
     <div style="background:#fff;border-radius:14px;border:1px solid var(--gray-200);overflow:hidden;" id="admin-payment-table"></div>
@@ -2195,25 +2198,16 @@ function doAdminLogin() {
     });
   });
 }
-function logoutAdmin() {
-  supaSignOut();
-  var dash = document.getElementById('admin-dashboard');
-  if (dash) dash.style.display = 'none';
-  document.body.style.overflow = '';
-}
 window.addEventListener('load', function() {
   var pw = document.getElementById('admin-password');
   if (pw) pw.addEventListener('keydown', function(e) { if (e.key === 'Enter') doAdminLogin(); });
 });
 
 /* ── INIT ── */
-function initAdminDashboard() {
-  switchAdminTab('a-overview');
-  /* Show loading state */
-  var overviewEl = document.getElementById('a-overview');
-  if (overviewEl) overviewEl.innerHTML = '<div style="padding:40px;text-align:center;color:#9199a8;font-size:14px;">Loading dashboard…</div>';
+var _adminPollInterval = null;
 
-  Promise.all([
+function refreshAdminData(silent) {
+  return Promise.all([
     supaLoadTickets(null),
     supaLoadClients(),
     supaLoadContractors()
@@ -2226,13 +2220,27 @@ function initAdminDashboard() {
     renderAdminClients();
     renderContractorCards();
     renderAdminPayments();
-  }).catch(function() {
-    renderAdminOverview();
-    renderAdminTickets();
-    renderAdminClients();
-    renderContractorCards();
-    renderAdminPayments();
+    if (!silent) {
+      var btn = document.getElementById('admin-refresh-btn');
+      if (btn) { btn.textContent = '✓ Updated'; setTimeout(function(){ btn.textContent = '⟳ Refresh'; }, 2000); }
+    }
   });
+}
+
+function initAdminDashboard() {
+  switchAdminTab('a-overview');
+  refreshAdminData(true);
+  /* Poll every 30 seconds for new tickets/updates */
+  if (_adminPollInterval) clearInterval(_adminPollInterval);
+  _adminPollInterval = setInterval(function() { refreshAdminData(true); }, 30000);
+}
+
+function logoutAdmin() {
+  supaSignOut();
+  if (_adminPollInterval) { clearInterval(_adminPollInterval); _adminPollInterval = null; }
+  var dash = document.getElementById('admin-dashboard');
+  if (dash) dash.style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 /* ── OVERVIEW KANBAN BOARD ── */
@@ -2862,10 +2870,32 @@ function addContractor() {
 }
 
 /* ── PAYMENTS ── */
+function parsePrice(str) {
+  if (!str) return 0;
+  var n = parseFloat(String(str).replace(/[^0-9.]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
 function renderAdminPayments() {
   var container = document.getElementById('admin-payment-table');
   if (!container) return;
   container.innerHTML = '';
+
+  /* Calculate real totals */
+  var now = new Date();
+  var thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2,'0');
+  var unpaidTotal = 0;
+  var paidMonthTotal = 0;
+  adminTickets.forEach(function(t) {
+    var amt = parsePrice(t.price);
+    if (!t.paid && amt) unpaidTotal += amt;
+    if (t.paid && amt && (t.updated_at || '').startsWith(thisMonth)) paidMonthTotal += amt;
+  });
+  var unpaidEl = document.getElementById('payments-unpaid-summary');
+  var paidEl   = document.getElementById('payments-paid-summary');
+  if (unpaidEl) unpaidEl.textContent = 'Unpaid: €' + unpaidTotal.toFixed(2);
+  if (paidEl)   paidEl.textContent   = 'Paid this month: €' + paidMonthTotal.toFixed(2);
+
   var hdr = aEl('div', 'padding:12px 20px;background:#f7f8fa;display:flex;gap:10px;font-size:11px;font-weight:700;color:#9199a8;letter-spacing:0.5px;text-transform:uppercase;border-bottom:1px solid #e5e1dd;');
   ['Job', 'Client', 'Property', 'Amount', 'Status', 'Actions'].forEach(function(h, i) {
     hdr.appendChild(aEl('div', 'flex:'+(i < 3 ? '1' : '0 0 '+(i===3?'90px':i===4?'110px':'150px'))+';', h));
@@ -2914,6 +2944,7 @@ window.openNewContractorForm = openNewContractorForm;
 window.addContractor = addContractor;
 window.renderAdminPayments = renderAdminPayments;
 window.renderAdminOverview = renderAdminOverview;
+window.refreshAdminData = refreshAdminData;
 window.postContractorMsg = postContractorMsg;
 </script>
 
