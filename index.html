@@ -1071,9 +1071,11 @@ function mapSupaTicketsToPortal(rows) {
       contractor: r.contractor_name || '',
       scheduled: r.scheduled_at || '',
       price: r.price ? 'EUR ' + r.price : '',
+      rawPrice: r.price || '',
       paid: r.paid || false,
       payRef: r.pay_ref || '',
       payStatus: r.paid ? 'Paid' : 'Awaiting Payment',
+      created_at: r.created_at || '',
       progress: r.status === 'Completed' ? 4 : r.status === 'In Progress' ? 3 : r.status === 'Scheduled' ? 2 : 1,
       messages: []
     };
@@ -1500,6 +1502,12 @@ function buildPaymentSection(t) {
     pr.appendChild(mkEl('div', 'font-size:22px;font-family:"DM Serif Display",serif;color:#16a34a;', t.price));
     paidBox.appendChild(pr);
     wrap.appendChild(paidBox);
+    if (t.rawPrice) {
+      var dlBtn1 = mkEl('button', 'background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:12px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;display:flex;align-items:center;gap:8px;margin-top:14px;', '↓ Download Invoice (PDF)');
+      dlBtn1.id = 'invoice-dl-btn-' + t.ref;
+      dlBtn1.addEventListener('click', function() { downloadInvoice(t); });
+      wrap.appendChild(dlBtn1);
+    }
   } else if (t.payStatus === 'Under Review') {
     var revBox = mkEl('div', 'background:#f5f3ff;border:1.5px solid #7c3aed;border-radius:14px;padding:20px 22px;');
     var rr2 = mkEl('div', 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;');
@@ -1565,6 +1573,12 @@ function buildPaymentSection(t) {
     submitBtn.addEventListener('click', function(){ submitPayment(t.ref); });
     formWrap.appendChild(submitBtn);
     invBox.appendChild(formWrap);
+    if (t.rawPrice) {
+      var dlBtn2 = mkEl('button', 'background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:12px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;display:flex;align-items:center;gap:8px;margin-top:14px;', '↓ Download Invoice (PDF)');
+      dlBtn2.id = 'invoice-dl-btn-' + t.ref;
+      dlBtn2.addEventListener('click', function() { downloadInvoice(t); });
+      invBox.appendChild(dlBtn2);
+    }
     wrap.appendChild(invBox);
   }
   return wrap;
@@ -3131,9 +3145,184 @@ window.renderAdminPayments = renderAdminPayments;
 window.renderAdminOverview = renderAdminOverview;
 window.refreshAdminData = refreshAdminData;
 window.postContractorMsg = postContractorMsg;
+
+/* ══════════════════════════════════════════════
+   INVOICE DOWNLOAD SYSTEM
+   ══════════════════════════════════════════════ */
+
+function getInvoiceNumber(ref) {
+  var m = ref.match(/(\d+)$/);
+  return 'INV-' + (m ? 1000 + parseInt(m[1]) : ref.replace(/\D/g,''));
+}
+
+function downloadInvoice(t) {
+  var btn = document.getElementById('invoice-dl-btn-' + t.ref);
+  if (btn) { btn.textContent = 'Generating…'; btn.disabled = true; }
+  fetch(window.location.origin + '/images/logo.png')
+    .then(function(r) { return r.blob(); })
+    .then(function(b) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        buildInvoicePDF(t, e.target.result);
+        if (btn) { btn.textContent = '↓ Download Invoice (PDF)'; btn.disabled = false; }
+      };
+      reader.readAsDataURL(b);
+    })
+    .catch(function() {
+      buildInvoicePDF(t, null);
+      if (btn) { btn.textContent = '↓ Download Invoice (PDF)'; btn.disabled = false; }
+    });
+}
+
+function buildInvoicePDF(t, logoDataUrl) {
+  var jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+  if (!jsPDF) { alert('PDF library not loaded. Please refresh and try again.'); return; }
+
+  var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  var W = 210, H = 297, M = 16;
+
+  /* ── Colours ── */
+  var orange = [212, 96, 29], navy = [26, 26, 46];
+  var gray = [145, 153, 168], lightGray = [247, 248, 250];
+  var green = [22, 163, 74];
+
+  /* ── Helpers ── */
+  var setC = function(rgb) { doc.setTextColor(rgb[0], rgb[1], rgb[2]); };
+  var setF = function(rgb) { doc.setFillColor(rgb[0], rgb[1], rgb[2]); };
+  var fmt = function(d) {
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+  };
+
+  /* ── Logo area (white bg top band) ── */
+  setF([255,255,255]); doc.rect(0, 0, W, 28, 'F');
+  if (logoDataUrl) {
+    try { doc.addImage(logoDataUrl, 'PNG', M, 4, 55, 20); } catch(e) {}
+  } else {
+    setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(16);
+    doc.text('STEADY CONSTRUCTION', M, 17);
+  }
+  /* Company details top right */
+  setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.text('STEADY CONSTRUCTION', W - M, 9, { align:'right' });
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); setC(gray);
+  doc.text('20 Harcourt Street, Dublin 2, D02 H364', W - M, 14, { align:'right' });
+  doc.text('info@steadyconstruction.ie', W - M, 19, { align:'right' });
+  doc.text('steadyconstruction.ie', W - M, 24, { align:'right' });
+
+  /* ── Orange header bar ── */
+  setF(orange); doc.rect(0, 28, W, 14, 'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(18);
+  doc.text('INVOICE', M, 38);
+  var invNum = getInvoiceNumber(t.ref);
+  doc.setFontSize(11); doc.setFont('helvetica','normal');
+  doc.text(invNum, W - M, 38, { align:'right' });
+
+  var y = 54;
+
+  /* ── Dates row ── */
+  var issueDate = t.created_at ? new Date(t.created_at) : new Date();
+  var dueDate = new Date(issueDate.getTime() + 7 * 86400000);
+  var cols = [[M, 'ISSUE DATE', fmt(issueDate)], [M+62, 'DUE DATE', fmt(dueDate)], [M+124, 'REFERENCE', t.ref]];
+  cols.forEach(function(c) {
+    setC(gray); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+    doc.text(c[1], c[0], y);
+    setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    doc.text(c[2], c[0], y + 6);
+  });
+  y += 14;
+
+  /* thin divider */
+  doc.setDrawColor(229,225,221); doc.setLineWidth(0.3); doc.line(M, y, W-M, y);
+  y += 8;
+
+  /* ── Bill To + Status badge ── */
+  setF(lightGray); doc.roundedRect(M, y, 82, 26, 2, 2, 'F');
+  setC(gray); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+  doc.text('BILL TO', M+5, y+7);
+  var clientName = (window._portalUser && window._portalUser.full_name) || 'Client';
+  var clientEmail = (window._portalUser && window._portalUser.email) || '';
+  setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(clientName, M+5, y+14);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); setC(gray);
+  doc.text(clientEmail, M+5, y+20);
+
+  /* Payment status badge */
+  var badgeColor = t.paid ? green : orange;
+  var badgeText  = t.paid ? 'PAID' : 'AWAITING PAYMENT';
+  setF(badgeColor); doc.roundedRect(W-M-52, y+4, 52, 11, 2, 2, 'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text(badgeText, W-M-26, y+11, { align:'center' });
+  y += 34;
+
+  /* ── Job Details ── */
+  setC(gray); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+  doc.text('JOB DETAILS', M, y); y += 4;
+  setF(lightGray); doc.roundedRect(M, y, W-M*2, 24, 2, 2, 'F');
+  setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.text(t.type, M+5, y+7);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); setC(gray);
+  doc.text('Property: ' + t.address, M+5, y+14);
+  var desc = (t.desc || '').substring(0, 95) + ((t.desc||'').length > 95 ? '…' : '');
+  doc.text(desc, M+5, y+20);
+  y += 32;
+
+  /* ── Pricing table ── */
+  setC(gray); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+  doc.text('PRICING BREAKDOWN', M, y); y += 4;
+
+  /* header */
+  setF(navy); doc.rect(M, y, W-M*2, 9, 'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text('DESCRIPTION', M+4, y+6); doc.text('AMOUNT', W-M-4, y+6, { align:'right' });
+  y += 9;
+
+  var raw = parseFloat(String(t.rawPrice).replace(/[^0-9.]/g,'')) || parseFloat(String(t.price).replace(/[^0-9.]/g,'')) || 0;
+  var vatRate = 0.135;
+  var subtotal = raw / (1 + vatRate);
+  var vatAmt = raw - subtotal;
+  var serviceDesc = t.type + ' — ' + (t.address.length > 42 ? t.address.substring(0,42)+'…' : t.address);
+
+  [[serviceDesc, '€'+subtotal.toFixed(2), true], ['VAT (13.5% — Irish reduced rate)', '€'+vatAmt.toFixed(2), false]].forEach(function(r) {
+    setF(r[2] ? [255,255,255] : lightGray); doc.rect(M, y, W-M*2, 9, 'F');
+    setC(navy); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text(r[0], M+4, y+6); doc.text(r[1], W-M-4, y+6, { align:'right' });
+    y += 9;
+  });
+
+  /* total row */
+  setF(orange); doc.rect(M, y, W-M*2, 12, 'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('TOTAL (INC. VAT)', M+4, y+8); doc.text('€'+raw.toFixed(2), W-M-4, y+8, { align:'right' });
+  y += 20;
+
+  /* ── Payment note ── */
+  if (t.paid) {
+    setF([240,253,244]); doc.setDrawColor(green[0],green[1],green[2]); doc.setLineWidth(0.4);
+    doc.roundedRect(M, y, W-M*2, 14, 2, 2, 'FD');
+    doc.setTextColor(green[0],green[1],green[2]); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text('✓  Payment Confirmed — Thank you for your payment!', M+5, y+9);
+  } else {
+    setF([255,243,236]); doc.setDrawColor(orange[0],orange[1],orange[2]); doc.setLineWidth(0.4);
+    doc.roundedRect(M, y, W-M*2, 18, 2, 2, 'FD');
+    setC(orange); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text('Payment Due within 7 Days', M+5, y+8);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setC(navy);
+    doc.text('Please use ticket reference ' + t.ref + ' when making your bank transfer.', M+5, y+14);
+  }
+
+  /* ── Footer ── */
+  doc.setDrawColor(229,225,221); doc.setLineWidth(0.3); doc.line(M, H-22, W-M, H-22);
+  setC(gray); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+  doc.text('Payment terms: Due within 7 days of invoice date.  Thank you for choosing Steady Construction.', W/2, H-15, { align:'center' });
+  doc.text('Steady Construction of Steady Yield. Trading under JMAFG Limited. 20 Harcourt Street, Dublin 2, D02 H364.', W/2, H-9, { align:'center' });
+
+  doc.save('Invoice-' + invNum + '.pdf');
+}
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="js/supabase-config.js?v=7"></script>
 
 
