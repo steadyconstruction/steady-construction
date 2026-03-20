@@ -2569,7 +2569,26 @@ function openAdminTicket(ref) {
     chatThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet.'));
   }
 
-  var chatFoot = aEl('div', 'padding:14px 16px;border-top:1px solid #f0f1f3;background:#fff;display:flex;gap:10px;');
+  var chatFoot = aEl('div', 'padding:14px 16px;border-top:1px solid #f0f1f3;background:#fff;');
+  /* File drop zone for client chat */
+  var clientFileInput = document.createElement('input');
+  clientFileInput.type = 'file'; clientFileInput.id = 'admin-client-file'; clientFileInput.multiple = true;
+  clientFileInput.accept = 'image/*,.pdf,.doc,.docx'; clientFileInput.style.display = 'none';
+  var clientDropZone = document.createElement('div');
+  clientDropZone.style.cssText = 'border:2px dashed #e5e1dd;border-radius:8px;padding:8px 14px;text-align:center;font-size:12px;color:#9199a8;cursor:pointer;margin-bottom:10px;transition:all 0.15s;';
+  clientDropZone.textContent = '📎 Drop files here or click to attach (photos, PDFs)';
+  clientDropZone.addEventListener('click', function(){ clientFileInput.click(); });
+  clientDropZone.addEventListener('dragover', function(e){ e.preventDefault(); clientDropZone.style.borderColor='#D4601D'; clientDropZone.style.background='#fff3ec'; });
+  clientDropZone.addEventListener('dragleave', function(){ clientDropZone.style.borderColor='#e5e1dd'; clientDropZone.style.background=''; });
+  clientDropZone.addEventListener('drop', function(e){
+    e.preventDefault(); clientDropZone.style.borderColor='#e5e1dd'; clientDropZone.style.background='';
+    handleClientFiles(e.dataTransfer.files, ref, chatThread);
+  });
+  clientFileInput.addEventListener('change', function(){ handleClientFiles(clientFileInput.files, ref, chatThread); clientFileInput.value=''; });
+  chatFoot.appendChild(clientFileInput);
+  chatFoot.appendChild(clientDropZone);
+  /* Message input row */
+  var clientMsgRow = aEl('div', 'display:flex;gap:10px;');
   var msgInput = document.createElement('input');
   msgInput.type = 'text'; msgInput.id = 'admin-msg-input'; msgInput.placeholder = 'Post an update to the client...';
   msgInput.style.cssText = 'flex:1;border:1px solid #e5e1dd;border-radius:8px;padding:10px 14px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;';
@@ -2578,7 +2597,8 @@ function openAdminTicket(ref) {
   msgInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') postAdminMsg(ref); });
   var postBtn = aEl('button', 'background:#1c1c1c;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap;', 'Post Update');
   postBtn.addEventListener('click', function() { postAdminMsg(ref); });
-  chatFoot.appendChild(msgInput); chatFoot.appendChild(postBtn);
+  clientMsgRow.appendChild(msgInput); clientMsgRow.appendChild(postBtn);
+  chatFoot.appendChild(clientMsgRow);
   chatBox.appendChild(chatFoot);
   panelContent.appendChild(chatBox);
 
@@ -2602,29 +2622,46 @@ function openAdminTicket(ref) {
   conThread.id = 'admin-contractor-thread';
   conThread.style.cssText = 'padding:16px 20px;background:#f7f8fa;min-height:80px;max-height:260px;overflow-y:auto;';
 
-  var conMsgs = t.contractorMessages || [];
-  if (!conMsgs.length) {
-    var noMsg = document.createElement('div');
-    noMsg.style.cssText = 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;';
-    noMsg.textContent = 'No contractor messages yet.';
-    conThread.appendChild(noMsg);
-  } else {
-    conMsgs.forEach(function(m) {
-      var isAdmin = m.from === 'admin';
-      var mRow = document.createElement('div');
-      mRow.style.cssText = 'display:flex;' + (isAdmin ? 'justify-content:flex-end;' : '') + 'margin-bottom:10px;';
-      var mBubble = document.createElement('div');
-      mBubble.style.cssText = 'max-width:72%;background:' + (isAdmin ? '#1a1a2e' : '#fff') + ';color:' + (isAdmin ? '#fff' : '#1a1a2e') + ';border-radius:' + (isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px') + ';padding:10px 14px;font-size:13px;line-height:1.5;border:' + (isAdmin ? 'none' : '1px solid #e5e1dd') + ';';
-      var mText = document.createElement('div');
-      mText.textContent = m.text;
-      var mMeta = document.createElement('div');
-      mMeta.style.cssText = 'font-size:11px;' + (isAdmin ? 'color:rgba(255,255,255,0.45)' : 'color:#9199a8') + ';margin-top:5px;';
-      mMeta.textContent = (m.name || m.from) + ' · ' + m.time;
-      mBubble.appendChild(mText);
-      mBubble.appendChild(mMeta);
-      mRow.appendChild(mBubble);
-      conThread.appendChild(mRow);
+  conThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:12px;padding:10px 0;', 'Loading messages…'));
+  /* Load contractor messages from Supabase */
+  if (t._id) {
+    supaLoadContractorMessages(t._id).then(function(rows) {
+      conThread.innerHTML = '';
+      if (!rows.length) {
+        conThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No contractor messages yet.'));
+        return;
+      }
+      rows.forEach(function(m) {
+        var isAdmin = m.sender_role === 'admin';
+        var mRow = document.createElement('div');
+        mRow.style.cssText = 'display:flex;' + (isAdmin ? 'justify-content:flex-end;' : '') + 'margin-bottom:10px;';
+        var mBubble = document.createElement('div');
+        mBubble.style.cssText = 'max-width:75%;background:' + (isAdmin ? '#1a1a2e' : '#fff') + ';color:' + (isAdmin ? '#fff' : '#1a1a2e') + ';border-radius:' + (isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px') + ';padding:10px 14px;font-size:13px;line-height:1.5;border:' + (isAdmin ? 'none' : '1px solid #e5e1dd') + ';';
+        if (m.message) mBubble.appendChild(aEl('div', 'margin-bottom:4px;', m.message));
+        if (m.file_url) {
+          if (m.is_image) {
+            var img = document.createElement('img');
+            img.src = m.file_url; img.style.cssText = 'max-width:200px;width:100%;border-radius:8px;margin-top:4px;display:block;cursor:pointer;';
+            img.onclick = function() { window.open(m.file_url, '_blank'); };
+            mBubble.appendChild(img);
+          } else {
+            var lnk = document.createElement('a');
+            lnk.href = m.file_url; lnk.target = '_blank';
+            lnk.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:' + (isAdmin ? 'rgba(255,255,255,0.8)' : '#2563eb') + ';text-decoration:underline;';
+            lnk.textContent = '📎 ' + (m.file_name || 'Attachment');
+            mBubble.appendChild(lnk);
+          }
+        }
+        var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+        mBubble.appendChild(aEl('div', 'font-size:11px;' + (isAdmin ? 'color:rgba(255,255,255,0.45)' : 'color:#9199a8') + ';margin-top:5px;', (m.sender_name||m.sender_role) + (ts ? ' · ' + ts : '')));
+        mRow.appendChild(mBubble);
+        conThread.appendChild(mRow);
+      });
+      conThread.scrollTop = conThread.scrollHeight;
     });
+  } else {
+    conThread.innerHTML = '';
+    conThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No contractor messages yet.'));
   }
   conChatBox.appendChild(conThread);
 
@@ -2686,42 +2723,33 @@ function postContractorMsg(ref) {
   if (!t || !inp) return;
   var msg = inp.value.trim();
   if (!msg) return;
-  if (!t.contractorMessages) t.contractorMessages = [];
-  var now = new Date();
-  var ts = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
-  t.contractorMessages.push({ from:'admin', text:msg, time:ts, name:'Admin' });
   inp.value = '';
+  /* Optimistic render */
   var thread = document.getElementById('admin-contractor-thread');
   if (thread) {
     var mRow = document.createElement('div');
     mRow.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:10px;';
     var mBubble = document.createElement('div');
     mBubble.style.cssText = 'max-width:72%;background:#1a1a2e;color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13px;line-height:1.5;';
-    var mText = document.createElement('div');
-    mText.textContent = msg;
-    var mMeta = document.createElement('div');
-    mMeta.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.45);margin-top:5px;';
-    mMeta.textContent = 'Admin · Just now';
-    mBubble.appendChild(mText);
-    mBubble.appendChild(mMeta);
+    mBubble.appendChild(aEl('div', '', msg));
+    mBubble.appendChild(aEl('div', 'font-size:11px;color:rgba(255,255,255,0.45);margin-top:5px;', 'Admin · Just now'));
     mRow.appendChild(mBubble);
     thread.appendChild(mRow);
     thread.scrollTop = thread.scrollHeight;
   }
+  /* Persist to Supabase */
+  if (t._id) supaPostContractorMessage(t._id, 'admin', 'Admin', msg);
 }
 
 /* ── HANDLE CONTRACTOR FILE ATTACHMENTS ── */
 function handleContractorFiles(files, ref, thread) {
   var t = adminTickets.find(function(x){ return x.ref === ref; });
   if (!t || !files || !files.length) return;
-  if (!t.contractorMessages) t.contractorMessages = [];
   var now = new Date();
   var ts = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
 
   Array.prototype.forEach.call(files, function(file) {
     var isImage = file.type.startsWith('image/');
-    var msgObj = { from:'admin', text:'', file:file.name, time:ts, name:'Admin', isFile:true, isImage:isImage };
-    t.contractorMessages.push(msgObj);
 
     /* Build chat bubble */
     var mRow = document.createElement('div');
@@ -2765,6 +2793,13 @@ function handleContractorFiles(files, ref, thread) {
 
     mRow.appendChild(mBubble);
     if (thread) { thread.appendChild(mRow); thread.scrollTop = thread.scrollHeight; }
+
+    /* Upload to Supabase Storage and save to contractor_messages */
+    if (t._id) {
+      supaUploadFile(file, ref).then(function(url) {
+        supaPostContractorMessage(t._id, 'admin', 'Admin', '', file.name, url || null, isImage);
+      });
+    }
   });
 }
 
@@ -2834,7 +2869,43 @@ function postAdminMsg(ref) {
     thread.scrollTop = thread.scrollHeight;
   }
   /* Persist to Supabase */
-  if (t._id || t.ref) supaPostMessage(t._id || t.ref, 'admin', 'Admin', msg);
+  if (t._id) supaPostMessage(t._id, 'admin', 'Admin', msg);
+}
+
+/* ── HANDLE CLIENT FILE ATTACHMENTS (admin → client chat) ── */
+function handleClientFiles(files, ref, thread) {
+  var t = adminTickets.find(function(x){ return x.ref === ref; });
+  if (!t || !files || !files.length) return;
+  Array.prototype.forEach.call(files, function(file) {
+    var isImage = file.type.startsWith('image/');
+    /* Optimistic render */
+    var row = aEl('div', 'display:flex;margin-bottom:10px;');
+    var bubble = aEl('div', 'max-width:75%;background:#f0f1f3;color:#1a1a2e;border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:13px;');
+    if (isImage) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = document.createElement('img');
+        img.src = e.target.result;
+        img.style.cssText = 'max-width:200px;width:100%;border-radius:8px;display:block;cursor:pointer;';
+        img.onclick = function(){ window.open(e.target.result,'_blank'); };
+        bubble.appendChild(img);
+        bubble.appendChild(aEl('div','font-size:11px;color:#9199a8;margin-top:5px;','Admin · Just now'));
+        if (thread) thread.scrollTop = thread.scrollHeight;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      bubble.appendChild(aEl('div','','📎 ' + file.name));
+      bubble.appendChild(aEl('div','font-size:11px;color:#9199a8;margin-top:5px;','Admin · Just now'));
+    }
+    row.appendChild(bubble);
+    if (thread) { thread.appendChild(row); thread.scrollTop = thread.scrollHeight; }
+    /* Upload and persist */
+    if (t._id) {
+      supaUploadFile(file, ref).then(function(url) {
+        supaPostMessage(t._id, 'admin', 'Admin', '', file.name, url || null, isImage);
+      });
+    }
+  });
 }
 
 /* ── CLIENTS ── */
