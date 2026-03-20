@@ -54,18 +54,23 @@ function supaCreateContractor(fullName, trade, phone, email) {
 function supaUpdateTicket(id, updates) {
   initSupabase();
   if (!supa || !id) return Promise.resolve({});
-  return supa.from('tickets').update({
-    status: updates.status,
-    contractor_name: updates.contractor,
-    scheduled_at: updates.scheduled,
-    price: updates.price,
-    updated_at: new Date().toISOString()
-  }).eq('id', id);
+  var payload = {};
+  if (updates.status    !== undefined) payload.status          = updates.status;
+  if (updates.contractor !== undefined) payload.contractor_name = updates.contractor;
+  if (updates.scheduled !== undefined) payload.scheduled_at    = updates.scheduled;
+  if (updates.price     !== undefined) payload.price           = updates.price;
+  return supa.from('tickets').update(payload).eq('id', id).then(function(r) {
+    if (r.error) console.error('supaUpdateTicket error:', r.error);
+    return r;
+  });
 }
 function supaSetPaid(id, paid) {
   initSupabase();
   if (!supa || !id) return Promise.resolve({});
-  return supa.from('tickets').update({ paid: paid, updated_at: new Date().toISOString() }).eq('id', id);
+  return supa.from('tickets').update({ paid: paid }).eq('id', id).then(function(r) {
+    if (r.error) console.error('supaSetPaid error:', r.error);
+    return r;
+  });
 }
 
 /* ── MESSAGES ── */
