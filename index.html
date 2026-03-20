@@ -2557,6 +2557,9 @@ function openAdminTicket(ref) {
             link.textContent = '📎 ' + (m.file_name || 'Attachment');
             bubble.appendChild(link);
           }
+        } else if (m.file_name && !m.message) {
+          /* Upload failed — show filename as fallback */
+          bubble.appendChild(aEl('div', 'font-size:12px;color:#9199a8;', '📎 ' + m.file_name + ' (upload failed — please resend)'));
         }
         var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
         bubble.appendChild(aEl('div', 'font-size:11px;'+(isClient?'color:rgba(255,255,255,0.6)':'color:#9199a8')+';margin-top:5px;', (m.sender_name||m.sender_role) + (ts ? ' · ' + ts : '')));
@@ -3103,7 +3106,7 @@ window.postContractorMsg = postContractorMsg;
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-config.js?v=5"></script>
+<script src="js/supabase-config.js?v=6"></script>
 
 
 
