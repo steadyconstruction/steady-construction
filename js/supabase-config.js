@@ -88,32 +88,44 @@ function supaSetPaid(ref, paid) {
   return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), { paid: paid });
 }
 
-/* ── MESSAGES ── */
+/* ── MESSAGES (direct REST — bypasses JS client session issues) ── */
+function _restPost(table, payload) {
+  var key = _k1 + _k2 + _k3;
+  return fetch(SUPA_URL + '/rest/v1/' + table, {
+    method: 'POST',
+    headers: {
+      'apikey': key,
+      'Authorization': 'Bearer ' + key,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(payload)
+  }).then(function(res) {
+    if (!res.ok) return res.text().then(function(t) { console.error('POST error', res.status, t); return { error: { message: t } }; });
+    return { error: null };
+  });
+}
+function _restGet(table, params) {
+  var key = _k1 + _k2 + _k3;
+  return fetch(SUPA_URL + '/rest/v1/' + table + '?' + params + '&order=created_at.asc', {
+    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Accept': 'application/json' }
+  }).then(function(res) { return res.ok ? res.json() : []; });
+}
 function supaPostMessage(ticketId, senderRole, name, body, fileName, fileUrl, isImage) {
-  initSupabase();
-  if (!supa || !ticketId) return Promise.resolve({});
-  return supa.from('messages').insert([{
-    ticket_id: ticketId, sender_role: senderRole, sender_name: name,
-    message: body||'', file_name: fileName||null, file_url: fileUrl||null, is_image: !!isImage
-  }]);
+  if (!ticketId) return Promise.resolve({});
+  return _restPost('messages', { ticket_id: ticketId, sender_role: senderRole, sender_name: name, message: body||'', file_name: fileName||null, file_url: fileUrl||null, is_image: !!isImage });
 }
 function supaLoadMessages(ticketId) {
-  initSupabase();
-  if (!supa || !ticketId) return Promise.resolve([]);
-  return supa.from('messages').select('*').eq('ticket_id', ticketId).order('created_at', {ascending:true}).then(function(r){ return r.data||[]; });
+  if (!ticketId) return Promise.resolve([]);
+  return _restGet('messages', 'ticket_id=eq.' + ticketId);
 }
 function supaPostContractorMessage(ticketId, senderRole, name, body, fileName, fileUrl, isImage) {
-  initSupabase();
-  if (!supa || !ticketId) return Promise.resolve({});
-  return supa.from('contractor_messages').insert([{
-    ticket_id: ticketId, sender_role: senderRole, sender_name: name,
-    message: body||'', file_name: fileName||null, file_url: fileUrl||null, is_image: !!isImage
-  }]);
+  if (!ticketId) return Promise.resolve({});
+  return _restPost('contractor_messages', { ticket_id: ticketId, sender_role: senderRole, sender_name: name, message: body||'', file_name: fileName||null, file_url: fileUrl||null, is_image: !!isImage });
 }
 function supaLoadContractorMessages(ticketId) {
-  initSupabase();
-  if (!supa || !ticketId) return Promise.resolve([]);
-  return supa.from('contractor_messages').select('*').eq('ticket_id', ticketId).order('created_at', {ascending:true}).then(function(r){ return r.data||[]; });
+  if (!ticketId) return Promise.resolve([]);
+  return _restGet('contractor_messages', 'ticket_id=eq.' + ticketId);
 }
 
 /* ── STORAGE ── */
