@@ -2784,18 +2784,40 @@ function saveAdminTicket(ref) {
   if (c)  t.contractor = c.value;
   if (sc) t.scheduled  = sc.value;
   if (p)  t.price      = p.value;
-  t._savedAt = Date.now(); /* stamp so poll doesn't overwrite for 5 minutes */
+  t._savedAt = Date.now(); /* protect from poll overwrites for 5 min */
 
-  /* Save to Supabase */
-  supaUpdateTicket(t.ref, {
-    status:     t.status,
-    contractor: t.contractor,
-    scheduled:  t.scheduled,
-    price:      t.price
-  });
+  /* Snapshot what we saved so we can verify DB got it */
+  var saved = { status: t.status, contractor: t.contractor, scheduled: t.scheduled, price: t.price };
 
   var msg = document.getElementById('ticket-save-msg');
-  if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 3000); }
+  if (msg) { msg.style.display = 'block'; msg.style.color = '#16a34a'; msg.textContent = 'Saving…'; }
+
+  /* Save to Supabase via direct REST fetch */
+  supaUpdateTicket(t.ref, saved).then(function(r) {
+    if (r && r.error) {
+      if (msg) { msg.style.color = '#dc2626'; msg.textContent = 'Save failed: ' + r.error.message; }
+      return;
+    }
+    /* Verify DB has the right values */
+    supaLoadTickets(null).then(function(rows) {
+      var row = rows.find(function(x) { return x.ref === ref; });
+      if (row) {
+        var ok = row.status === saved.status;
+        if (msg) {
+          msg.style.color = ok ? '#16a34a' : '#dc2626';
+          msg.textContent = ok ? 'Changes saved successfully.' : 'Warning: DB shows ' + row.status + ' not ' + saved.status + '. Try again.';
+          setTimeout(function() { if (msg) msg.style.display = 'none'; }, 4000);
+        }
+      } else {
+        if (msg) { msg.textContent = 'Changes saved.'; setTimeout(function() { msg.style.display = 'none'; }, 3000); }
+      }
+      /* Refresh all display with fresh DB data (ticket is still _savedAt-protected) */
+      mapSupaTicketsToAdmin(rows);
+      renderAdminOverview();
+      renderAdminTickets();
+    });
+  });
+
   renderAdminOverview();
   renderAdminTickets();
   renderAdminPayments();
@@ -3030,7 +3052,7 @@ window.postContractorMsg = postContractorMsg;
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-config.js"></script>
+<script src="js/supabase-config.js?v=3"></script>
 
 
 
