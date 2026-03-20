@@ -167,7 +167,8 @@ function mapSupaTicketsToAdmin(rows) {
       address:r.address||'', type:r.service_type||'', desc:r.description||'',
       status:r.status||'Pending', priority:r.priority||'Standard',
       contractor:r.contractor_name||'', scheduled:r.scheduled_at||'', price:r.price||'',
-      paid:r.paid||false, messages:[], contractorMessages:[]};
+      paid:r.paid||false, created_at:r.created_at||'', updated_at:r.updated_at||'',
+      messages:[], contractorMessages:[]};
   });
 }
 function mapSupaClientsToAdmin(rows) {

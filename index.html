@@ -2146,9 +2146,18 @@ window.submitNewRequest = submitNewRequest;
   <div id="admin-a-payments" style="display:none;padding:28px 24px;max-width:1200px;margin:0 auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
       <h2 style="font-size:22px;color:var(--navy);">Payment Management</h2>
-      <div style="display:flex;gap:14px;font-size:13px;">
-        <div id="payments-unpaid-summary" style="background:#fff3ec;color:#D4601D;padding:8px 16px;border-radius:8px;font-weight:600;">Unpaid: €0.00</div>
-        <div id="payments-paid-summary" style="background:#f0fdf4;color:#16a34a;padding:8px 16px;border-radius:8px;font-weight:600;">Paid this month: €0.00</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <select id="payment-filter-month" onchange="renderAdminPayments()" style="border:1px solid #e5e1dd;border-radius:8px;padding:7px 12px;font-size:13px;font-family:'DM Sans',sans-serif;background:#fff;color:#1a1a2e;cursor:pointer;outline:none;">
+          <option value="01">January</option><option value="02">February</option><option value="03">March</option>
+          <option value="04">April</option><option value="05">May</option><option value="06">June</option>
+          <option value="07">July</option><option value="08">August</option><option value="09">September</option>
+          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+        </select>
+        <select id="payment-filter-year" onchange="renderAdminPayments()" style="border:1px solid #e5e1dd;border-radius:8px;padding:7px 12px;font-size:13px;font-family:'DM Sans',sans-serif;background:#fff;color:#1a1a2e;cursor:pointer;outline:none;">
+          <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+        </select>
+        <div id="payments-unpaid-summary" style="background:#fff3ec;color:#D4601D;padding:8px 16px;border-radius:8px;font-weight:600;font-size:13px;">Unpaid: €0.00</div>
+        <div id="payments-paid-summary" style="background:#f0fdf4;color:#16a34a;padding:8px 16px;border-radius:8px;font-weight:600;font-size:13px;">Paid: €0.00</div>
       </div>
     </div>
     <div style="background:#fff;border-radius:14px;border:1px solid var(--gray-200);overflow:hidden;" id="admin-payment-table"></div>
@@ -3038,42 +3047,61 @@ function renderAdminPayments() {
   if (!container) return;
   container.innerHTML = '';
 
-  /* Calculate real totals */
+  /* Get selected month/year (default to current) */
   var now = new Date();
-  var thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2,'0');
-  var unpaidTotal = 0;
-  var paidMonthTotal = 0;
-  adminTickets.forEach(function(t) {
-    var amt = parsePrice(t.price);
-    if (!t.paid && amt) unpaidTotal += amt;
-    if (t.paid && amt && (t.updated_at || '').startsWith(thisMonth)) paidMonthTotal += amt;
+  var mSel = document.getElementById('payment-filter-month');
+  var ySel = document.getElementById('payment-filter-year');
+  if (mSel && !mSel._init) {
+    mSel.value = String(now.getMonth() + 1).padStart(2,'0');
+    ySel.value = String(now.getFullYear());
+    mSel._init = true;
+  }
+  var selMonth = (mSel ? mSel.value : String(now.getMonth() + 1).padStart(2,'0'));
+  var selYear  = (ySel ? ySel.value : String(now.getFullYear()));
+  var selPrefix = selYear + '-' + selMonth; /* e.g. "2026-03" */
+
+  /* Tickets created in the selected month */
+  var monthTickets = adminTickets.filter(function(t) {
+    return t.price && (t.created_at || '').startsWith(selPrefix);
   });
+
+  /* Totals: unpaid = all unpaid in that month; paid = all paid in that month */
+  var unpaidTotal = 0, paidTotal = 0;
+  monthTickets.forEach(function(t) {
+    var amt = parsePrice(t.price);
+    if (t.paid)  paidTotal   += amt;
+    else         unpaidTotal += amt;
+  });
+
   var unpaidEl = document.getElementById('payments-unpaid-summary');
   var paidEl   = document.getElementById('payments-paid-summary');
   if (unpaidEl) unpaidEl.textContent = 'Unpaid: €' + unpaidTotal.toFixed(2);
-  if (paidEl)   paidEl.textContent   = 'Paid this month: €' + paidMonthTotal.toFixed(2);
+  if (paidEl)   paidEl.textContent   = 'Paid: €' + paidTotal.toFixed(2);
 
   var hdr = aEl('div', 'padding:12px 20px;background:#f7f8fa;display:flex;gap:10px;font-size:11px;font-weight:700;color:#9199a8;letter-spacing:0.5px;text-transform:uppercase;border-bottom:1px solid #e5e1dd;');
   ['Job', 'Client', 'Property', 'Amount', 'Status', 'Actions'].forEach(function(h, i) {
     hdr.appendChild(aEl('div', 'flex:'+(i < 3 ? '1' : '0 0 '+(i===3?'90px':i===4?'110px':'150px'))+';', h));
   });
   container.appendChild(hdr);
-  var withPrice = adminTickets.filter(function(t) { return t.price; });
-  if (!withPrice.length) { container.appendChild(aEl('div', 'padding:30px;text-align:center;color:#9199a8;', 'No payment records yet.')); return; }
-  withPrice.forEach(function(t) {
+
+  if (!monthTickets.length) {
+    container.appendChild(aEl('div', 'padding:30px;text-align:center;color:#9199a8;', 'No payment records for this period.'));
+    return;
+  }
+  monthTickets.forEach(function(t) {
     var row = aEl('div', 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:flex;gap:10px;align-items:center;');
     var jobCol = aEl('div', 'flex:1;');
     jobCol.appendChild(aEl('div', 'font-size:14px;font-weight:500;color:#1a1a2e;', t.type));
     jobCol.appendChild(aEl('div', 'font-size:12px;color:#9199a8;', t.ref));
     row.appendChild(jobCol);
     row.appendChild(aEl('div', 'flex:1;font-size:13px;color:#4a5264;', t.client));
-    row.appendChild(aEl('div', 'flex:1;font-size:13px;color:#4a5264;', t.address.substring(0, 22) + '...'));
+    row.appendChild(aEl('div', 'flex:1;font-size:13px;color:#4a5264;', (t.address||'').substring(0,22) + '...'));
     row.appendChild(aEl('div', 'flex:0 0 90px;font-size:14px;font-weight:700;color:#1a1a2e;', t.price));
     var stCol = aEl('div', 'flex:0 0 110px;');
     stCol.appendChild(aPill(t.paid ? 'Paid' : 'Awaiting Payment'));
     row.appendChild(stCol);
     var actCol = aEl('div', 'flex:0 0 150px;display:flex;gap:6px;');
-    var markBtn = aEl('button', 'background:'+(t.paid?'#f0f1f3':'#D4601D')+';color:'+(t.paid?'#9199a8':'#fff')+';border:none;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', t.paid ? 'Paid' : 'Mark Paid');
+    var markBtn = aEl('button', 'background:'+(t.paid?'#f0f1f3':'#D4601D')+';color:'+(t.paid?'#9199a8':'#fff')+';border:none;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', t.paid ? 'Paid ✓' : 'Mark Paid');
     markBtn.addEventListener('click', function() { setPaymentStatus(t.ref, true); });
     var viewBtn = aEl('button', 'background:#f0f1f3;color:#1a1a2e;border:none;padding:6px 12px;border-radius:7px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'View');
     viewBtn.addEventListener('click', function() { switchAdminTab('a-tickets'); openAdminTicket(t.ref); });
@@ -3106,7 +3134,7 @@ window.postContractorMsg = postContractorMsg;
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-config.js?v=6"></script>
+<script src="js/supabase-config.js?v=7"></script>
 
 
 
