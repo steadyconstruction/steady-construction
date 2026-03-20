@@ -2113,7 +2113,7 @@ window.submitNewRequest = submitNewRequest;
     <!-- Client table -->
     <div style="background:#fff;border-radius:14px;border:1px solid var(--gray-200);overflow:hidden;">
       <div style="padding:14px 20px;background:var(--gray-100);display:grid;grid-template-columns:2fr 1.5fr 1fr 80px 80px 100px 120px;gap:10px;font-size:11px;font-weight:600;color:var(--gray-400);letter-spacing:0.5px;text-transform:uppercase;">
-        <span>Client</span><span>Email</span><span>Phone</span><span>Props</span><span>Tickets</span><span>Status</span><span>Actions</span>
+        <span>Client</span><span>Email</span><span>Phone</span><span>Active</span><span>Closed</span><span>Status</span><span>Actions</span>
       </div>
       <div id="admin-client-list"></div>
     </div>
@@ -2786,7 +2786,7 @@ function saveAdminTicket(ref) {
   if (p)  t.price      = p.value;
 
   /* Save to Supabase */
-  supaUpdateTicket(t._id, {
+  supaUpdateTicket(t.ref, {
     status:     t.status,
     contractor: t.contractor,
     scheduled:  t.scheduled,
@@ -2805,7 +2805,7 @@ function setPaymentStatus(ref, paid) {
   var t = adminTickets.find(function(x) { return x.ref === ref; });
   if (!t) return;
   t.paid = paid;
-  supaSetPaid(t._id, paid);
+  supaSetPaid(t.ref, paid);
   openAdminTicket(ref);
   renderAdminOverview();
   renderAdminPayments();
@@ -2830,7 +2830,7 @@ function postAdminMsg(ref) {
     thread.scrollTop = thread.scrollHeight;
   }
   /* Persist to Supabase */
-  if (t._id) supaPostMessage(t._id, 'admin', 'Admin', msg);
+  if (t._id || t.ref) supaPostMessage(t._id || t.ref, 'admin', 'Admin', msg);
 }
 
 /* ── CLIENTS ── */
@@ -2843,15 +2843,20 @@ function renderAdminClients() {
     return;
   }
   adminClients.forEach(function(c, i) {
-    var row = aEl('div', 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:flex;align-items:center;gap:12px;flex-wrap:wrap;');
-    var nameCol = aEl('div', 'flex:2;min-width:140px;');
+    /* Count real tickets for this client */
+    var clientTickets = adminTickets.filter(function(t){ return t.client === c.name || t._clientId === c._id; });
+    var activeCount = clientTickets.filter(function(t){ return t.status !== 'Completed' && t.status !== 'Closed'; }).length;
+    var closedCount = clientTickets.filter(function(t){ return t.status === 'Completed' || t.status === 'Closed'; }).length;
+
+    var row = aEl('div', 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:grid;grid-template-columns:2fr 1.5fr 1fr 80px 80px 100px 120px;gap:10px;align-items:center;');
+    var nameCol = aEl('div', '');
     nameCol.appendChild(aEl('div', 'font-size:14px;font-weight:600;color:#1a1a2e;', c.name));
     if (c.company) nameCol.appendChild(aEl('div', 'font-size:12px;color:#9199a8;', c.company));
     row.appendChild(nameCol);
-    row.appendChild(aEl('div', 'flex:2;font-size:13px;color:#4a5264;min-width:160px;', c.email));
-    row.appendChild(aEl('div', 'flex:1;font-size:13px;color:#4a5264;min-width:110px;', c.phone));
-    row.appendChild(aEl('div', 'width:40px;text-align:center;font-size:13px;font-weight:600;color:#1a1a2e;', String(c.props)));
-    row.appendChild(aEl('div', 'width:40px;text-align:center;font-size:13px;font-weight:600;color:#1a1a2e;', String(c.tickets)));
+    row.appendChild(aEl('div', 'font-size:13px;color:#4a5264;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;', c.email));
+    row.appendChild(aEl('div', 'font-size:13px;color:#4a5264;', c.phone || '—'));
+    row.appendChild(aEl('div', 'text-align:center;font-size:14px;font-weight:700;color:#D4601D;', String(activeCount)));
+    row.appendChild(aEl('div', 'text-align:center;font-size:14px;font-weight:700;color:#16a34a;', String(closedCount)));
     row.appendChild(aPill(c.active ? 'Active' : 'Inactive'));
     var btns = aEl('div', 'display:flex;gap:6px;');
     var toggleBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;', c.active ? 'Disable' : 'Enable');

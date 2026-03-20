@@ -51,23 +51,24 @@ function supaCreateContractor(fullName, trade, phone, email) {
   return supa.from('contractors').insert([{full_name:fullName,trade:trade,phone:phone,email:email}]).select().single();
 }
 /* ── TICKET WRITES ── */
-function supaUpdateTicket(id, updates) {
+function supaUpdateTicket(ref, updates) {
   initSupabase();
-  if (!supa || !id) return Promise.resolve({});
+  if (!supa || !ref) return Promise.resolve({});
   var payload = {};
-  if (updates.status    !== undefined) payload.status          = updates.status;
+  if (updates.status     !== undefined) payload.status          = updates.status;
   if (updates.contractor !== undefined) payload.contractor_name = updates.contractor;
-  if (updates.scheduled !== undefined) payload.scheduled_at    = updates.scheduled;
-  if (updates.price     !== undefined) payload.price           = updates.price;
-  return supa.from('tickets').update(payload).eq('id', id).then(function(r) {
+  if (updates.scheduled  !== undefined) payload.scheduled_at   = updates.scheduled;
+  if (updates.price      !== undefined) payload.price          = updates.price;
+  return supa.from('tickets').update(payload).eq('ref', ref).then(function(r) {
     if (r.error) console.error('supaUpdateTicket error:', r.error);
+    else console.log('supaUpdateTicket OK — ref:', ref, 'status:', payload.status);
     return r;
   });
 }
-function supaSetPaid(id, paid) {
+function supaSetPaid(ref, paid) {
   initSupabase();
-  if (!supa || !id) return Promise.resolve({});
-  return supa.from('tickets').update({ paid: paid }).eq('id', id).then(function(r) {
+  if (!supa || !ref) return Promise.resolve({});
+  return supa.from('tickets').update({ paid: paid }).eq('ref', ref).then(function(r) {
     if (r.error) console.error('supaSetPaid error:', r.error);
     return r;
   });
@@ -115,7 +116,7 @@ function supaUploadFile(file, ticketRef) {
 
 function mapSupaTicketsToAdmin(rows) {
   adminTickets = rows.map(function(r){
-    return {_id:r.id,ref:r.ref,client:r.client_name||r.client_id||'',address:r.address||'',type:r.service_type||'',
+    return {_id:r.id,ref:r.ref,_clientId:r.client_id||'',client:r.client_name||r.client_id||'',address:r.address||'',type:r.service_type||'',
       desc:r.description||'',status:r.status||'Pending',priority:r.priority||'Standard',
       contractor:r.contractor_name||'',scheduled:r.scheduled_at||'',price:r.price||'',
       paid:r.paid||false,messages:[],contractorMessages:[]};
