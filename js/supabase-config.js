@@ -51,27 +51,41 @@ function supaCreateContractor(fullName, trade, phone, email) {
   return supa.from('contractors').insert([{full_name:fullName,trade:trade,phone:phone,email:email}]).select().single();
 }
 /* ── TICKET WRITES ── */
+function _restPatch(table, filter, payload) {
+  var key = _k1 + _k2 + _k3;
+  return fetch(SUPA_URL + '/rest/v1/' + table + '?' + filter, {
+    method: 'PATCH',
+    headers: {
+      'apikey': key,
+      'Authorization': 'Bearer ' + key,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(payload)
+  }).then(function(res) {
+    if (!res.ok) {
+      return res.text().then(function(t) {
+        console.error('PATCH error', res.status, t);
+        return { error: { message: t } };
+      });
+    }
+    console.log('PATCH OK:', table, filter, payload);
+    return { error: null };
+  });
+}
+
 function supaUpdateTicket(ref, updates) {
-  initSupabase();
-  if (!supa || !ref) return Promise.resolve({});
+  if (!ref) return Promise.resolve({ error: { message: 'no ref' } });
   var payload = {};
   if (updates.status     !== undefined) payload.status          = updates.status;
   if (updates.contractor !== undefined) payload.contractor_name = updates.contractor;
   if (updates.scheduled  !== undefined) payload.scheduled_at   = updates.scheduled;
   if (updates.price      !== undefined) payload.price          = updates.price;
-  return supa.from('tickets').update(payload).eq('ref', ref).then(function(r) {
-    if (r.error) console.error('supaUpdateTicket error:', r.error);
-    else console.log('supaUpdateTicket OK — ref:', ref, 'status:', payload.status);
-    return r;
-  });
+  return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), payload);
 }
 function supaSetPaid(ref, paid) {
-  initSupabase();
-  if (!supa || !ref) return Promise.resolve({});
-  return supa.from('tickets').update({ paid: paid }).eq('ref', ref).then(function(r) {
-    if (r.error) console.error('supaSetPaid error:', r.error);
-    return r;
-  });
+  if (!ref) return Promise.resolve({ error: { message: 'no ref' } });
+  return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), { paid: paid });
 }
 
 /* ── MESSAGES ── */
