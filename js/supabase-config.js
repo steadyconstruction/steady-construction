@@ -128,15 +128,26 @@ function supaLoadContractorMessages(ticketId) {
   return _restGet('contractor_messages', 'ticket_id=eq.' + ticketId);
 }
 
-/* ── STORAGE ── */
+/* ── STORAGE (direct REST — bypasses JS client session issues) ── */
 function supaUploadFile(file, ticketRef) {
-  initSupabase();
-  if (!supa || !file) return Promise.resolve(null);
+  if (!file) return Promise.resolve(null);
+  var key = _k1 + _k2 + _k3;
   var ext = file.name.split('.').pop();
   var path = ticketRef + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
-  return supa.storage.from('ticket-attachments').upload(path, file, { upsert: false }).then(function(r) {
-    if (r.error) { console.error('Upload error:', r.error); return null; }
-    return supa.storage.from('ticket-attachments').getPublicUrl(path).data.publicUrl;
+  return fetch(SUPA_URL + '/storage/v1/object/ticket-attachments/' + path, {
+    method: 'POST',
+    headers: {
+      'apikey': key,
+      'Authorization': 'Bearer ' + key,
+      'Content-Type': file.type || 'application/octet-stream',
+      'x-upsert': 'false'
+    },
+    body: file
+  }).then(function(res) {
+    if (!res.ok) {
+      return res.text().then(function(t) { console.error('Upload error', res.status, t); return null; });
+    }
+    return SUPA_URL + '/storage/v1/object/public/ticket-attachments/' + path;
   });
 }
 
