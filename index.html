@@ -1757,23 +1757,38 @@ function submitNewRequest() {
   };
   portalTickets.unshift(newTicket);
 
-  /* Save to Supabase */
-  if (window._portalUser && typeof initSupabase === 'function') {
-    initSupabase();
-    if (supa) {
-      supa.from('tickets').insert([{
-        ref: ref,
-        client_id: window._portalUser.id,
-        client_name: window._portalUser.full_name || '',
-        address: address.trim(),
-        service_type: service,
-        priority: priority,
-        description: desc.trim(),
-        status: 'Pending'
-      }]).then(function(r){
-        if (r && r.error) console.error('Ticket insert error:', r.error);
+  /* Save to Supabase — insert ticket then upload any photos as messages */
+  if (window._portalUser && typeof supaUploadFile === 'function') {
+    var senderName = window._portalUser.full_name || 'Client';
+    supa.from('tickets').insert([{
+      ref: ref,
+      client_id: window._portalUser.id,
+      client_name: senderName,
+      address: address.trim(),
+      service_type: service,
+      priority: priority,
+      description: desc.trim(),
+      occupancy: occupancy,
+      access_instructions: accessText.trim(),
+      status: 'Pending'
+    }]).select('id').single().then(function(r) {
+      if (r.error) { console.error('Ticket insert error:', r.error); return; }
+      var ticketId = r.data.id;
+      newTicket._id = ticketId;
+      /* Save detail note as first message */
+      supaPostMessage(ticketId, 'client', senderName, detailText);
+      /* Upload each photo and save as message */
+      uploadedFiles.forEach(function(file) {
+        supaUploadFile(file, ref).then(function(url) {
+          if (!url) return;
+          var isImg = file.type.startsWith('image/');
+          supaPostMessage(ticketId, 'client', senderName, '', file.name, url, isImg);
+          /* Update local message with real URL so it displays now */
+          var localMsg = newTicket.messages.find(function(m){ return m.from==='photo' && m.text===file.name; });
+          if (localMsg) { localMsg.fileUrl = url; }
+        });
       });
-    }
+    });
   }
 
   var msg = document.getElementById('new-req-success');
@@ -2516,25 +2531,47 @@ function openAdminTicket(ref) {
 
   var chatThread = aEl('div', 'padding:16px 20px;background:#f7f8fa;min-height:80px;max-height:280px;overflow-y:auto;');
   chatThread.id = 'admin-chat-thread';
-  if (!t.messages || !t.messages.length) {
-    chatThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet.'));
-  } else {
-    t.messages.forEach(function(m) {
-      if (m.from === 'system') {
-        var sys = aEl('div', 'text-align:center;margin:8px 0;');
-        sys.appendChild(aEl('span', 'font-size:11px;color:#9199a8;background:#f0f1f3;padding:3px 12px;border-radius:100px;', m.text + ' · ' + m.time));
-        chatThread.appendChild(sys);
-      } else {
-        var isClient = m.from === 'client';
-        var row = aEl('div', 'display:flex;' + (isClient ? 'justify-content:flex-end;' : '') + 'margin-bottom:10px;');
-        var bubble = aEl('div', 'max-width:72%;background:'+(isClient?'#D4601D':'#f0f1f3')+';color:'+(isClient?'#fff':'#1a1a2e')+';border-radius:'+(isClient?'14px 14px 4px 14px':'14px 14px 14px 4px')+';padding:10px 14px;font-size:13px;line-height:1.5;');
-        bubble.appendChild(aEl('div', '', m.text));
-        bubble.appendChild(aEl('div', 'font-size:11px;'+(isClient?'color:rgba(255,255,255,0.6)':'color:#9199a8')+';margin-top:5px;', (m.name || m.from) + ' · ' + m.time));
-        row.appendChild(bubble); chatThread.appendChild(row);
-      }
-    });
-  }
+  chatThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:12px;padding:10px 0;', 'Loading messages…'));
   chatBox.appendChild(chatThread);
+
+  /* Load real messages from Supabase */
+  if (t._id) {
+    supaLoadMessages(t._id).then(function(rows) {
+      chatThread.innerHTML = '';
+      if (!rows.length) {
+        chatThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet.'));
+        return;
+      }
+      rows.forEach(function(m) {
+        var isClient = m.sender_role === 'client';
+        var row = aEl('div', 'display:flex;' + (isClient ? 'justify-content:flex-end;' : '') + 'margin-bottom:10px;');
+        var bubble = aEl('div', 'max-width:75%;background:'+(isClient?'#D4601D':'#f0f1f3')+';color:'+(isClient?'#fff':'#1a1a2e')+';border-radius:'+(isClient?'14px 14px 4px 14px':'14px 14px 14px 4px')+';padding:10px 14px;font-size:13px;line-height:1.5;');
+        if (m.message) bubble.appendChild(aEl('div', 'margin-bottom:4px;', m.message));
+        if (m.file_url) {
+          if (m.is_image) {
+            var img = document.createElement('img');
+            img.src = m.file_url; img.alt = m.file_name || 'attachment';
+            img.style.cssText = 'max-width:220px;width:100%;border-radius:8px;margin-top:4px;display:block;cursor:pointer;';
+            img.onclick = function() { window.open(m.file_url, '_blank'); };
+            bubble.appendChild(img);
+          } else {
+            var link = document.createElement('a');
+            link.href = m.file_url; link.target = '_blank';
+            link.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:'+(isClient?'rgba(255,255,255,0.85)':'#2563eb')+';text-decoration:underline;';
+            link.textContent = '📎 ' + (m.file_name || 'Attachment');
+            bubble.appendChild(link);
+          }
+        }
+        var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+        bubble.appendChild(aEl('div', 'font-size:11px;'+(isClient?'color:rgba(255,255,255,0.6)':'color:#9199a8')+';margin-top:5px;', (m.sender_name||m.sender_role) + (ts ? ' · ' + ts : '')));
+        row.appendChild(bubble); chatThread.appendChild(row);
+      });
+      chatThread.scrollTop = chatThread.scrollHeight;
+    });
+  } else {
+    chatThread.innerHTML = '';
+    chatThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet.'));
+  }
 
   var chatFoot = aEl('div', 'padding:14px 16px;border-top:1px solid #f0f1f3;background:#fff;display:flex;gap:10px;');
   var msgInput = document.createElement('input');
@@ -2739,16 +2776,26 @@ function handleContractorFiles(files, ref, thread) {
 function saveAdminTicket(ref) {
   var t = adminTickets.find(function(x) { return x.ref === ref; });
   if (!t) return;
-  var s = document.getElementById('et-status');
-  var c = document.getElementById('et-contractor');
+  var s  = document.getElementById('et-status');
+  var c  = document.getElementById('et-contractor');
   var sc = document.getElementById('et-scheduled');
-  var p = document.getElementById('et-price');
-  if (s) t.status = s.value;
-  if (c) t.contractor = c.value;
-  if (sc) t.scheduled = sc.value;
-  if (p) t.price = p.value;
+  var p  = document.getElementById('et-price');
+  if (s)  t.status     = s.value;
+  if (c)  t.contractor = c.value;
+  if (sc) t.scheduled  = sc.value;
+  if (p)  t.price      = p.value;
+
+  /* Save to Supabase */
+  supaUpdateTicket(t._id, {
+    status:     t.status,
+    contractor: t.contractor,
+    scheduled:  t.scheduled,
+    price:      t.price
+  });
+
   var msg = document.getElementById('ticket-save-msg');
   if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 3000); }
+  renderAdminOverview();
   renderAdminTickets();
   renderAdminPayments();
 }
@@ -2756,7 +2803,12 @@ function saveAdminTicket(ref) {
 /* ── PAYMENT STATUS ── */
 function setPaymentStatus(ref, paid) {
   var t = adminTickets.find(function(x) { return x.ref === ref; });
-  if (t) { t.paid = paid; openAdminTicket(ref); renderAdminPayments(); }
+  if (!t) return;
+  t.paid = paid;
+  supaSetPaid(t._id, paid);
+  openAdminTicket(ref);
+  renderAdminOverview();
+  renderAdminPayments();
 }
 
 /* ── POST MESSAGE ── */
@@ -2766,8 +2818,8 @@ function postAdminMsg(ref) {
   if (!t || !inp) return;
   var msg = inp.value.trim();
   if (!msg) return;
-  t.messages.push({ from: 'team', text: msg, time: 'Just now', name: 'Admin' });
   inp.value = '';
+  /* Optimistic render */
   var thread = document.getElementById('admin-chat-thread');
   if (thread) {
     var row = aEl('div', 'display:flex;margin-bottom:10px;');
@@ -2777,10 +2829,8 @@ function postAdminMsg(ref) {
     row.appendChild(bubble); thread.appendChild(row);
     thread.scrollTop = thread.scrollHeight;
   }
-  if (typeof portalTickets !== 'undefined') {
-    var pt = portalTickets.find(function(x) { return x.ref === ref; });
-    if (pt) pt.messages.push({ from: 'team', text: msg, time: 'Just now', name: 'Steady Team' });
-  }
+  /* Persist to Supabase */
+  if (t._id) supaPostMessage(t._id, 'admin', 'Admin', msg);
 }
 
 /* ── CLIENTS ── */

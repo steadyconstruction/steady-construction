@@ -69,28 +69,43 @@ function supaSetPaid(id, paid) {
 }
 
 /* ── MESSAGES ── */
-function supaPostMessage(ticketId, fromRole, name, body) {
+function supaPostMessage(ticketId, senderRole, name, body, fileName, fileUrl, isImage) {
   initSupabase();
   if (!supa || !ticketId) return Promise.resolve({});
-  return supa.from('messages').insert([{ ticket_id: ticketId, from_role: fromRole, sender_name: name, body: body }]);
+  return supa.from('messages').insert([{
+    ticket_id: ticketId, sender_role: senderRole, sender_name: name,
+    message: body||'', file_name: fileName||null, file_url: fileUrl||null, is_image: !!isImage
+  }]);
 }
 function supaLoadMessages(ticketId) {
   initSupabase();
   if (!supa || !ticketId) return Promise.resolve([]);
   return supa.from('messages').select('*').eq('ticket_id', ticketId).order('created_at', {ascending:true}).then(function(r){ return r.data||[]; });
 }
-function supaPostContractorMessage(ticketId, fromRole, name, body, fileName, fileUrl, isImage) {
+function supaPostContractorMessage(ticketId, senderRole, name, body, fileName, fileUrl, isImage) {
   initSupabase();
   if (!supa || !ticketId) return Promise.resolve({});
   return supa.from('contractor_messages').insert([{
-    ticket_id: ticketId, from_role: fromRole, sender_name: name,
-    body: body||'', file_name: fileName||null, file_url: fileUrl||null, is_image: !!isImage
+    ticket_id: ticketId, sender_role: senderRole, sender_name: name,
+    message: body||'', file_name: fileName||null, file_url: fileUrl||null, is_image: !!isImage
   }]);
 }
 function supaLoadContractorMessages(ticketId) {
   initSupabase();
   if (!supa || !ticketId) return Promise.resolve([]);
   return supa.from('contractor_messages').select('*').eq('ticket_id', ticketId).order('created_at', {ascending:true}).then(function(r){ return r.data||[]; });
+}
+
+/* ── STORAGE ── */
+function supaUploadFile(file, ticketRef) {
+  initSupabase();
+  if (!supa || !file) return Promise.resolve(null);
+  var ext = file.name.split('.').pop();
+  var path = ticketRef + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+  return supa.storage.from('ticket-attachments').upload(path, file, { upsert: false }).then(function(r) {
+    if (r.error) { console.error('Upload error:', r.error); return null; }
+    return supa.storage.from('ticket-attachments').getPublicUrl(path).data.publicUrl;
+  });
 }
 
 function mapSupaTicketsToAdmin(rows) {
