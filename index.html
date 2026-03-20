@@ -1300,6 +1300,7 @@ function showTicketList() {
 }
 
 /* ── TICKET DETAIL ── */
+var _portalChatPoll = null;
 function openTicketDetail(ref) {
   var t = portalTickets.find(function(x){ return x.ref===ref; });
   if (!t) return;
@@ -1311,6 +1312,27 @@ function openTicketDetail(ref) {
   detailView.style.display = 'block';
   detailView.innerHTML = '';
   detailView.appendChild(buildTicketDetail(t));
+  /* Poll for new messages every 20s while ticket is open */
+  if (_portalChatPoll) clearInterval(_portalChatPoll);
+  if (t._id) {
+    _portalChatPoll = setInterval(function() {
+      var thread = document.getElementById('chat-thread-' + ref);
+      if (!thread) { clearInterval(_portalChatPoll); return; }
+      supaLoadMessages(t._id).then(function(rows) {
+        if (!rows) return;
+        var activeEl = document.getElementById('chat-thread-' + ref);
+        if (!activeEl) return;
+        var atBottom = activeEl.scrollHeight - activeEl.scrollTop <= activeEl.clientHeight + 40;
+        activeEl.innerHTML = '';
+        if (!rows.length) {
+          activeEl.appendChild(mkEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet. Say hello!'));
+        } else {
+          appendMessagesFromDB(activeEl, rows);
+        }
+        if (atBottom) activeEl.scrollTop = activeEl.scrollHeight;
+      });
+    }, 20000);
+  }
 }
 
 function buildTicketDetail(t) {
@@ -1321,6 +1343,7 @@ function buildTicketDetail(t) {
   back.addEventListener('mouseover', function(){ back.style.color='#D4601D'; });
   back.addEventListener('mouseout',  function(){ back.style.color='#9199a8'; });
   back.addEventListener('click', function(){
+    if (_portalChatPoll) { clearInterval(_portalChatPoll); _portalChatPoll = null; }
     document.getElementById('ticket-detail-view').style.display='none';
     document.getElementById('ticket-list-view').style.display='block';
     renderTicketList();
@@ -1393,10 +1416,34 @@ function buildTicketDetail(t) {
 
   var chatThread = mkEl('div', 'padding:16px 20px;background:#f7f8fa;min-height:80px;max-height:320px;overflow-y:auto;');
   chatThread.id = 'chat-thread-' + t.ref;
-  appendMessages(chatThread, t.messages);
+  chatThread.appendChild(mkEl('div', 'text-align:center;color:#9199a8;font-size:12px;padding:20px 0;', 'Loading messages…'));
   chatBox.appendChild(chatThread);
+  /* Load full history from Supabase */
+  if (t._id) {
+    supaLoadMessages(t._id).then(function(rows) {
+      chatThread.innerHTML = '';
+      if (!rows || !rows.length) {
+        chatThread.appendChild(mkEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet. Say hello!'));
+      } else {
+        appendMessagesFromDB(chatThread, rows);
+      }
+      chatThread.scrollTop = chatThread.scrollHeight;
+    });
+  }
 
-  var chatFoot = mkEl('div', 'padding:14px 16px;border-top:1px solid #f0f1f3;display:flex;gap:10px;');
+  var chatFoot = mkEl('div', 'padding:14px 16px;border-top:1px solid #f0f1f3;display:flex;gap:10px;align-items:center;');
+  /* File attach button */
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = 'image/*,application/pdf';
+  fileInput.style.display = 'none';
+  fileInput.id = 'chat-file-' + t.ref;
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files && fileInput.files[0]) sendPortalFile(t.ref, fileInput.files[0]);
+    fileInput.value = '';
+  });
+  var attachBtn = mkEl('button', 'background:none;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:16px;cursor:pointer;color:#9199a8;flex-shrink:0;', '📎');
+  attachBtn.title = 'Attach image or file';
+  attachBtn.addEventListener('click', function(){ fileInput.click(); });
   var chatInput = document.createElement('input');
   chatInput.type = 'text';
   chatInput.id = 'chat-input-' + t.ref;
@@ -1407,7 +1454,10 @@ function buildTicketDetail(t) {
   chatInput.addEventListener('keydown', function(e){ if(e.key==='Enter') sendPortalMsg(t.ref); });
   var sendBtn = mkEl('button', 'background:#D4601D;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap;', 'Send');
   sendBtn.addEventListener('click', function(){ sendPortalMsg(t.ref); });
-  chatFoot.appendChild(chatInput); chatFoot.appendChild(sendBtn);
+  chatFoot.appendChild(fileInput);
+  chatFoot.appendChild(attachBtn);
+  chatFoot.appendChild(chatInput);
+  chatFoot.appendChild(sendBtn);
   chatBox.appendChild(chatFoot);
   wrap.appendChild(chatBox);
 
@@ -1464,29 +1514,97 @@ function appendMessages(thread, messages) {
   });
 }
 
+/* Render Supabase message rows in the client chat thread */
+function appendMessagesFromDB(thread, rows) {
+  rows.forEach(function(m) {
+    var isClient = m.sender_role === 'client';
+    var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : 'Just now';
+    var row = mkEl('div', 'display:flex;' + (isClient ? 'justify-content:flex-end;' : '') + 'margin-bottom:12px;');
+    var bubble = mkEl('div', 'max-width:72%;background:' + (isClient ? '#D4601D' : '#fff') + ';color:' + (isClient ? '#fff' : '#1a1a2e') + ';border-radius:' + (isClient ? '14px 14px 4px 14px' : '14px 14px 14px 4px') + ';padding:12px 16px;border:' + (isClient ? 'none' : '1px solid #e5e1dd') + ';');
+    if (m.message) bubble.appendChild(mkEl('div', 'font-size:13px;line-height:1.5;', m.message));
+    if (m.file_url) {
+      if (m.is_image) {
+        var img = document.createElement('img');
+        img.src = m.file_url; img.alt = m.file_name || 'image';
+        img.style.cssText = 'max-width:220px;width:100%;border-radius:8px;margin-top:6px;display:block;cursor:pointer;';
+        img.addEventListener('click', function(){ window.open(m.file_url, '_blank'); });
+        bubble.appendChild(img);
+      } else {
+        var link = document.createElement('a');
+        link.href = m.file_url; link.target = '_blank';
+        link.style.cssText = 'display:block;margin-top:6px;font-size:12px;color:' + (isClient ? 'rgba(255,255,255,0.85)' : '#2563eb') + ';text-decoration:underline;';
+        link.textContent = '📎 ' + (m.file_name || 'Attachment');
+        bubble.appendChild(link);
+      }
+    }
+    bubble.appendChild(mkEl('div', 'font-size:11px;' + (isClient ? 'color:rgba(255,255,255,0.65)' : 'color:#9199a8') + ';margin-top:6px;', (m.sender_name || (isClient ? 'You' : 'Team')) + ' · ' + ts));
+    row.appendChild(bubble);
+    thread.appendChild(row);
+  });
+}
+
 function sendPortalMsg(ref) {
   var t = portalTickets.find(function(x){ return x.ref===ref; });
   var input = document.getElementById('chat-input-' + ref);
   if (!t || !input) return;
   var msg = input.value.trim();
   if (!msg) return;
-  t.messages.push({from:'client', text:msg, time:'Just now', name:'You'});
   input.value = '';
+  var senderName = (window._portalUser && window._portalUser.full_name) || 'Client';
+  var ts = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  /* Optimistic render */
   var thread = document.getElementById('chat-thread-' + ref);
   if (thread) {
     var row = mkEl('div', 'display:flex;justify-content:flex-end;margin-bottom:12px;');
     var bubble = mkEl('div', 'max-width:72%;background:#D4601D;color:#fff;border-radius:14px 14px 4px 14px;padding:12px 16px;');
     bubble.appendChild(mkEl('div', 'font-size:13px;line-height:1.5;', msg));
-    bubble.appendChild(mkEl('div', 'font-size:11px;color:rgba(255,255,255,0.65);margin-top:6px;', 'You · Just now'));
+    bubble.appendChild(mkEl('div', 'font-size:11px;color:rgba(255,255,255,0.65);margin-top:6px;', senderName + ' · ' + ts));
     row.appendChild(bubble);
     thread.appendChild(row);
     thread.scrollTop = thread.scrollHeight;
   }
-  /* Sync to admin */
-  if (typeof adminTickets !== 'undefined') {
-    var at = adminTickets.find(function(x){ return x.ref===ref; });
-    if (at) at.messages.push({from:'client', text:msg, time:'Just now', name:(window._portalUser&&window._portalUser.full_name)||'You'});
+  /* Persist to Supabase */
+  if (t._id && typeof supaPostMessage === 'function') {
+    supaPostMessage(t._id, 'client', senderName, msg);
   }
+}
+
+function sendPortalFile(ref, file) {
+  var t = portalTickets.find(function(x){ return x.ref===ref; });
+  if (!t || !t._id || !file) return;
+  var senderName = (window._portalUser && window._portalUser.full_name) || 'Client';
+  var isImage = file.type.startsWith('image/');
+  var thread = document.getElementById('chat-thread-' + ref);
+  /* Optimistic render — show preview immediately */
+  var row = mkEl('div', 'display:flex;justify-content:flex-end;margin-bottom:12px;');
+  var bubble = mkEl('div', 'max-width:72%;background:#fff;border:1px solid #e5e1dd;border-radius:14px 14px 4px 14px;padding:10px 14px;');
+  bubble.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;margin-bottom:4px;', 'Uploading…'));
+  if (isImage) {
+    try {
+      var preview = document.createElement('img');
+      preview.src = URL.createObjectURL(file);
+      preview.style.cssText = 'max-width:220px;width:100%;border-radius:8px;display:block;opacity:0.6;';
+      bubble.appendChild(preview);
+    } catch(e) {}
+  } else {
+    bubble.appendChild(mkEl('div', 'font-size:12px;color:#1a1a2e;', '📎 ' + file.name));
+  }
+  bubble.appendChild(mkEl('div', 'font-size:11px;color:#9199a8;margin-top:6px;', senderName + ' · Just now'));
+  row.appendChild(bubble);
+  if (thread) { thread.appendChild(row); thread.scrollTop = thread.scrollHeight; }
+  /* Upload then persist */
+  supaUploadFile(file, ref).then(function(url) {
+    if (!url) {
+      bubble.querySelector('div').textContent = 'Upload failed. Please try again.';
+      return;
+    }
+    bubble.querySelector('div').textContent = isImage ? 'Image sent' : 'File sent';
+    if (isImage) {
+      var imgs = bubble.querySelectorAll('img');
+      if (imgs[0]) imgs[0].style.opacity = '1';
+    }
+    supaPostMessage(t._id, 'client', senderName, '', file.name, url, isImage);
+  });
 }
 
 /* ── PAYMENT SECTION ── */
@@ -2441,6 +2559,7 @@ function renderAdminTickets() {
 }
 
 /* ── TICKET EDITOR — full DOM, zero string onclick ── */
+var _adminChatPoll = null;
 function openAdminTicket(ref) {
   var t = adminTickets.find(function(x) { return x.ref === ref; });
   if (!t) return;
@@ -2451,7 +2570,7 @@ function openAdminTicket(ref) {
 
   /* Back */
   var back = aEl('button', 'background:none;border:none;cursor:pointer;font-size:13px;color:#9199a8;margin-bottom:20px;padding:0;font-family:"DM Sans",sans-serif;', '\u2190 Back to tickets');
-  back.addEventListener('click', function() { panel.style.display = 'none'; });
+  back.addEventListener('click', function() { panel.style.display = 'none'; if (_adminChatPoll) { clearInterval(_adminChatPoll); _adminChatPoll = null; } });
   panelContent.appendChild(back);
 
   /* Header */
@@ -2553,43 +2672,57 @@ function openAdminTicket(ref) {
   chatThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:12px;padding:10px 0;', 'Loading messages…'));
   chatBox.appendChild(chatThread);
 
-  /* Load real messages from Supabase */
+  /* Shared render function for admin client-chat thread */
+  function renderAdminClientThread(rows) {
+    chatThread.innerHTML = '';
+    if (!rows || !rows.length) {
+      chatThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet.'));
+      return;
+    }
+    rows.forEach(function(m) {
+      var isClient = m.sender_role === 'client';
+      var row = aEl('div', 'display:flex;' + (isClient ? 'justify-content:flex-end;' : '') + 'margin-bottom:10px;');
+      var bubble = aEl('div', 'max-width:75%;background:'+(isClient?'#D4601D':'#f0f1f3')+';color:'+(isClient?'#fff':'#1a1a2e')+';border-radius:'+(isClient?'14px 14px 4px 14px':'14px 14px 14px 4px')+';padding:10px 14px;font-size:13px;line-height:1.5;');
+      if (m.message) bubble.appendChild(aEl('div', 'margin-bottom:4px;', m.message));
+      if (m.file_url) {
+        if (m.is_image) {
+          var img = document.createElement('img');
+          img.src = m.file_url; img.alt = m.file_name || 'attachment';
+          img.style.cssText = 'max-width:220px;width:100%;border-radius:8px;margin-top:4px;display:block;cursor:pointer;';
+          img.onclick = function() { window.open(m.file_url, '_blank'); };
+          bubble.appendChild(img);
+        } else {
+          var link = document.createElement('a');
+          link.href = m.file_url; link.target = '_blank';
+          link.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:'+(isClient?'rgba(255,255,255,0.85)':'#2563eb')+';text-decoration:underline;';
+          link.textContent = '📎 ' + (m.file_name || 'Attachment');
+          bubble.appendChild(link);
+        }
+      } else if (m.file_name && !m.message) {
+        bubble.appendChild(aEl('div', 'font-size:12px;color:#9199a8;', '📎 ' + m.file_name));
+      }
+      var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+      bubble.appendChild(aEl('div', 'font-size:11px;'+(isClient?'color:rgba(255,255,255,0.6)':'color:#9199a8')+';margin-top:5px;', (m.sender_name||m.sender_role) + (ts ? ' · ' + ts : '')));
+      row.appendChild(bubble); chatThread.appendChild(row);
+    });
+    chatThread.scrollTop = chatThread.scrollHeight;
+  }
+
+  /* Load real messages from Supabase + start polling */
+  if (_adminChatPoll) { clearInterval(_adminChatPoll); _adminChatPoll = null; }
   if (t._id) {
     supaLoadMessages(t._id).then(function(rows) {
-      chatThread.innerHTML = '';
-      if (!rows.length) {
-        chatThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet.'));
-        return;
-      }
-      rows.forEach(function(m) {
-        var isClient = m.sender_role === 'client';
-        var row = aEl('div', 'display:flex;' + (isClient ? 'justify-content:flex-end;' : '') + 'margin-bottom:10px;');
-        var bubble = aEl('div', 'max-width:75%;background:'+(isClient?'#D4601D':'#f0f1f3')+';color:'+(isClient?'#fff':'#1a1a2e')+';border-radius:'+(isClient?'14px 14px 4px 14px':'14px 14px 14px 4px')+';padding:10px 14px;font-size:13px;line-height:1.5;');
-        if (m.message) bubble.appendChild(aEl('div', 'margin-bottom:4px;', m.message));
-        if (m.file_url) {
-          if (m.is_image) {
-            var img = document.createElement('img');
-            img.src = m.file_url; img.alt = m.file_name || 'attachment';
-            img.style.cssText = 'max-width:220px;width:100%;border-radius:8px;margin-top:4px;display:block;cursor:pointer;';
-            img.onclick = function() { window.open(m.file_url, '_blank'); };
-            bubble.appendChild(img);
-          } else {
-            var link = document.createElement('a');
-            link.href = m.file_url; link.target = '_blank';
-            link.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:'+(isClient?'rgba(255,255,255,0.85)':'#2563eb')+';text-decoration:underline;';
-            link.textContent = '📎 ' + (m.file_name || 'Attachment');
-            bubble.appendChild(link);
-          }
-        } else if (m.file_name && !m.message) {
-          /* Upload failed — show filename as fallback */
-          bubble.appendChild(aEl('div', 'font-size:12px;color:#9199a8;', '📎 ' + m.file_name + ' (upload failed — please resend)'));
-        }
-        var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-        bubble.appendChild(aEl('div', 'font-size:11px;'+(isClient?'color:rgba(255,255,255,0.6)':'color:#9199a8')+';margin-top:5px;', (m.sender_name||m.sender_role) + (ts ? ' · ' + ts : '')));
-        row.appendChild(bubble); chatThread.appendChild(row);
-      });
-      chatThread.scrollTop = chatThread.scrollHeight;
+      renderAdminClientThread(rows);
     });
+    _adminChatPoll = setInterval(function() {
+      var el = document.getElementById('admin-chat-thread');
+      if (!el) { clearInterval(_adminChatPoll); return; }
+      supaLoadMessages(t._id).then(function(rows) {
+        var atBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 40;
+        renderAdminClientThread(rows);
+        if (atBottom) el.scrollTop = el.scrollHeight;
+      });
+    }, 20000);
   } else {
     chatThread.innerHTML = '';
     chatThread.appendChild(aEl('div', 'text-align:center;color:#9199a8;font-size:13px;padding:20px 0;', 'No messages yet.'));
@@ -3180,142 +3313,229 @@ function buildInvoicePDF(t, logoDataUrl) {
 
   var doc = new jsPDF({ unit: 'mm', format: 'a4' });
   var W = 210, H = 297, M = 16;
+  var CW = W - M * 2; // 178mm content width
 
-  /* ── Colours ── */
-  var orange = [212, 96, 29], navy = [26, 26, 46];
-  var gray = [145, 153, 168], lightGray = [247, 248, 250];
-  var green = [22, 163, 74];
+  /* -- Colours -- */
+  var slate  = [61,  74,  92];   // #3d4a5c
+  var orange = [200, 90,  30];   // #c85a1e
+  var paper  = [250, 248, 244];  // #faf8f4
+  var paper2 = [240, 237, 230];  // #f0ede6
+  var rule   = [221, 217, 208];  // #ddd9d0
+  var mid    = [100, 110, 120];
+  var green  = [22,  163, 74];
 
-  /* ── Helpers ── */
+  /* -- Helpers -- */
   var setC = function(rgb) { doc.setTextColor(rgb[0], rgb[1], rgb[2]); };
   var setF = function(rgb) { doc.setFillColor(rgb[0], rgb[1], rgb[2]); };
-  var fmt = function(d) {
-    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+  var setD = function(rgb) { doc.setDrawColor(rgb[0], rgb[1], rgb[2]); };
+  var fmtDate = function(d) {
+    var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return d.getDate() + ' ' + mo[d.getMonth()] + ' ' + d.getFullYear();
   };
+  var fmtEuro = function(n) { return '\u20AC ' + n.toFixed(2); };
 
-  /* ── Logo area (white bg top band) ── */
-  setF([255,255,255]); doc.rect(0, 0, W, 28, 'F');
-  if (logoDataUrl) {
-    try { doc.addImage(logoDataUrl, 'PNG', M, 4, 55, 20); } catch(e) {}
-  } else {
-    setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(16);
-    doc.text('STEADY CONSTRUCTION', M, 17);
+  /* -- Gradient top stripe (slate to orange) -- */
+  var steps = 80;
+  for (var i = 0; i < steps; i++) {
+    var tt = i / (steps - 1);
+    doc.setFillColor(
+      Math.round(slate[0] + (orange[0] - slate[0]) * tt),
+      Math.round(slate[1] + (orange[1] - slate[1]) * tt),
+      Math.round(slate[2] + (orange[2] - slate[2]) * tt)
+    );
+    doc.rect(i * (W / steps), 0, W / steps + 0.5, 5, 'F');
   }
-  /* Company details top right */
-  setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(10);
-  doc.text('STEADY CONSTRUCTION', W - M, 9, { align:'right' });
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); setC(gray);
-  doc.text('20 Harcourt Street, Dublin 2, D02 H364', W - M, 14, { align:'right' });
-  doc.text('info@steadyconstruction.ie', W - M, 19, { align:'right' });
-  doc.text('steadyconstruction.ie', W - M, 24, { align:'right' });
 
-  /* ── Orange header bar ── */
-  setF(orange); doc.rect(0, 28, W, 14, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(18);
-  doc.text('INVOICE', M, 38);
+  var y = 5;
+
+  /* -- White header (two-column) -- */
+  setF([255, 255, 255]); doc.rect(0, y, W, 44, 'F');
+
+  /* Left: logo */
+  if (logoDataUrl) {
+    try { doc.addImage(logoDataUrl, 'PNG', M, y + 3, 52, 18); } catch(e) {}
+  } else {
+    setC(slate); doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+    doc.text('STEADY CONSTRUCTION', M, y + 14);
+  }
+  /* Left: company details */
+  setC(mid); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+  doc.text('20 Harcourt Street, Dublin 2, D02 H364', M, y + 27);
+  doc.text('info@steadyconstruction.ie  |  steadyconstruction.ie', M, y + 32);
+  doc.text('VAT No. IE 9876543W', M, y + 37);
+
+  /* Right: "Invoice" in serif */
   var invNum = getInvoiceNumber(t.ref);
-  doc.setFontSize(11); doc.setFont('helvetica','normal');
-  doc.text(invNum, W - M, 38, { align:'right' });
+  setC(slate); doc.setFont('times', 'bold'); doc.setFontSize(30);
+  doc.text('Invoice', W - M, y + 19, { align: 'right' });
 
-  var y = 54;
+  /* Right: invoice number in orange */
+  setC(orange); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  doc.text(invNum, W - M, y + 27, { align: 'right' });
 
-  /* ── Dates row ── */
+  /* Right: issue / due dates */
   var issueDate = t.created_at ? new Date(t.created_at) : new Date();
-  var dueDate = new Date(issueDate.getTime() + 7 * 86400000);
-  var cols = [[M, 'ISSUE DATE', fmt(issueDate)], [M+62, 'DUE DATE', fmt(dueDate)], [M+124, 'REFERENCE', t.ref]];
-  cols.forEach(function(c) {
-    setC(gray); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
-    doc.text(c[1], c[0], y);
-    setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    doc.text(c[2], c[0], y + 6);
-  });
-  y += 14;
+  var dueDate   = new Date(issueDate.getTime() + 14 * 86400000);
+  var dColA = W - M - 56, dColB = W - M - 22;
+  setC(mid); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('ISSUED', dColA, y + 35);
+  doc.text('DUE', dColB, y + 35);
+  setC(slate); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+  doc.text(fmtDate(issueDate), dColA, y + 40);
+  doc.text(fmtDate(dueDate),   dColB, y + 40);
 
-  /* thin divider */
-  doc.setDrawColor(229,225,221); doc.setLineWidth(0.3); doc.line(M, y, W-M, y);
-  y += 8;
+  y += 44; // y = 49
 
-  /* ── Bill To + Status badge ── */
-  setF(lightGray); doc.roundedRect(M, y, 82, 26, 2, 2, 'F');
-  setC(gray); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
-  doc.text('BILL TO', M+5, y+7);
-  var clientName = (window._portalUser && window._portalUser.full_name) || 'Client';
-  var clientEmail = (window._portalUser && window._portalUser.email) || '';
-  setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-  doc.text(clientName, M+5, y+14);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); setC(gray);
-  doc.text(clientEmail, M+5, y+20);
+  /* -- Thin rule -- */
+  setD(rule); doc.setLineWidth(0.3); doc.line(M, y, W - M, y);
+  y += 1; // y = 50
 
-  /* Payment status badge */
+  /* -- Billing section (paper2 bg) -- */
+  setF(paper2); doc.rect(0, y, W, 32, 'F');
+  y += 2; // y = 52
+
+  /* Status badge (top-right) */
   var badgeColor = t.paid ? green : orange;
   var badgeText  = t.paid ? 'PAID' : 'AWAITING PAYMENT';
-  setF(badgeColor); doc.roundedRect(W-M-52, y+4, 52, 11, 2, 2, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
-  doc.text(badgeText, W-M-26, y+11, { align:'center' });
-  y += 34;
+  setF(badgeColor); doc.roundedRect(W - M - 48, y + 2, 48, 9, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+  doc.text(badgeText, W - M - 24, y + 7.5, { align: 'center' });
 
-  /* ── Job Details ── */
-  setC(gray); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
-  doc.text('JOB DETAILS', M, y); y += 4;
-  setF(lightGray); doc.roundedRect(M, y, W-M*2, 24, 2, 2, 'F');
-  setC(navy); doc.setFont('helvetica','bold'); doc.setFontSize(10);
-  doc.text(t.type, M+5, y+7);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); setC(gray);
-  doc.text('Property: ' + t.address, M+5, y+14);
-  var desc = (t.desc || '').substring(0, 95) + ((t.desc||'').length > 95 ? '…' : '');
-  doc.text(desc, M+5, y+20);
-  y += 32;
+  /* Bill To */
+  setC(mid); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('BILL TO', M + 4, y + 7);
+  var clientName    = (window._portalUser && window._portalUser.full_name) || 'Client';
+  var clientEmail   = (window._portalUser && window._portalUser.email)     || '';
+  var clientCompany = (window._portalUser && window._portalUser.company)   || '';
+  setC(slate); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  doc.text(clientName, M + 4, y + 14);
+  setC(mid); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+  if (clientEmail)   doc.text(clientEmail,   M + 4, y + 20);
+  if (clientCompany) doc.text(clientCompany, M + 4, y + 26);
 
-  /* ── Pricing table ── */
-  setC(gray); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
-  doc.text('PRICING BREAKDOWN', M, y); y += 4;
+  /* Ticket Reference */
+  var billingCol2 = M + CW / 2;
+  setC(mid); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('TICKET REFERENCE', billingCol2, y + 7);
+  setC(slate); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  doc.text(t.ref, billingCol2, y + 14);
 
-  /* header */
-  setF(navy); doc.rect(M, y, W-M*2, 9, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
-  doc.text('DESCRIPTION', M+4, y+6); doc.text('AMOUNT', W-M-4, y+6, { align:'right' });
-  y += 9;
+  y += 34; // y = 86
 
-  var raw = parseFloat(String(t.rawPrice).replace(/[^0-9.]/g,'')) || parseFloat(String(t.price).replace(/[^0-9.]/g,'')) || 0;
-  var vatRate = 0.135;
+  /* -- Full-width rule -- */
+  setD(rule); doc.setLineWidth(0.3); doc.line(0, y, W, y);
+  y += 7; // y = 93
+
+  /* -- Job Details -- */
+  setC(mid); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('JOB DETAILS', M, y);
+  y += 4; // y = 97
+
+  setF(paper); setD(rule); doc.setLineWidth(0.3);
+  doc.roundedRect(M, y, CW, 32, 2, 2, 'FD');
+
+  setC(mid); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('PROPERTY ADDRESS', M + 5, y + 8);
+  doc.text('COMPLETION DATE',  M + CW / 2 + 5, y + 8);
+  setC(slate); doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  var addrFit = (t.address || '---').length > 36 ? (t.address || '').substring(0, 36) + '...' : (t.address || '---');
+  doc.text(addrFit, M + 5, y + 14);
+  var compDate = t.scheduled ? fmtDate(new Date(t.scheduled)) : '---';
+  doc.text(compDate, M + CW / 2 + 5, y + 14);
+
+  setC(mid); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('DESCRIPTION OF WORK', M + 5, y + 22);
+  setC(slate); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+  var descFull = (t.type || '') + (t.desc ? ' - ' + t.desc : '');
+  var descFit  = descFull.length > 90 ? descFull.substring(0, 90) + '...' : descFull;
+  doc.text(descFit, M + 5, y + 28);
+
+  y += 40; // y = 137
+
+  /* -- Pricing table -- */
+  setC(mid); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('PRICING BREAKDOWN', M, y);
+  y += 4; // y = 141
+
+  /* Table header */
+  setF(slate); doc.rect(M, y, CW, 9, 'F');
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5);
+  var tCol1 = M + 5, tCol2 = M + CW * 0.62, tCol3 = M + CW - 4;
+  doc.text('DESCRIPTION', tCol1, y + 6);
+  doc.text('VAT RATE',    tCol2, y + 6);
+  doc.text('AMOUNT',      tCol3, y + 6, { align: 'right' });
+  y += 9; // y = 150
+
+  var raw      = parseFloat(String(t.rawPrice).replace(/[^0-9.]/g,'')) || parseFloat(String(t.price).replace(/[^0-9.]/g,'')) || 0;
+  var vatRate  = 0.135;
   var subtotal = raw / (1 + vatRate);
-  var vatAmt = raw - subtotal;
-  var serviceDesc = t.type + ' — ' + (t.address.length > 42 ? t.address.substring(0,42)+'…' : t.address);
+  var vatAmt   = raw - subtotal;
+  var svcDesc  = (t.type || 'Construction Service') + (t.address ? ' - ' + (t.address.length > 38 ? t.address.substring(0,38)+'...' : t.address) : '');
 
-  [[serviceDesc, '€'+subtotal.toFixed(2), true], ['VAT (13.5% — Irish reduced rate)', '€'+vatAmt.toFixed(2), false]].forEach(function(r) {
-    setF(r[2] ? [255,255,255] : lightGray); doc.rect(M, y, W-M*2, 9, 'F');
-    setC(navy); doc.setFont('helvetica','normal'); doc.setFontSize(9);
-    doc.text(r[0], M+4, y+6); doc.text(r[1], W-M-4, y+6, { align:'right' });
-    y += 9;
-  });
+  /* Row 1: service */
+  setF([255, 255, 255]); doc.rect(M, y, CW, 9, 'F');
+  setD(rule); doc.setLineWidth(0.2); doc.line(M, y + 9, M + CW, y + 9);
+  setC(slate); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+  doc.text(svcDesc.length > 48 ? svcDesc.substring(0,48)+'...' : svcDesc, tCol1, y + 6);
+  setC(mid); doc.text('13.5%', tCol2, y + 6);
+  setC(slate); doc.text(fmtEuro(subtotal), tCol3, y + 6, { align: 'right' });
+  y += 9; // y = 159
 
-  /* total row */
-  setF(orange); doc.rect(M, y, W-M*2, 12, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(12);
-  doc.text('TOTAL (INC. VAT)', M+4, y+8); doc.text('€'+raw.toFixed(2), W-M-4, y+8, { align:'right' });
-  y += 20;
+  /* Row 2: VAT */
+  setF(paper); doc.rect(M, y, CW, 9, 'F');
+  setD(rule); doc.line(M, y + 9, M + CW, y + 9);
+  setC(slate); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+  doc.text('VAT', tCol1, y + 6);
+  setC(mid); doc.text('13.5%', tCol2, y + 6);
+  setC(slate); doc.text(fmtEuro(vatAmt), tCol3, y + 6, { align: 'right' });
+  y += 9; // y = 168
 
-  /* ── Payment note ── */
+  /* Totals block */
+  var totX = M + CW * 0.5;
+  setC(mid); doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  doc.text('Subtotal', totX + 5, y + 7);
+  setC(slate); doc.text(fmtEuro(subtotal), tCol3, y + 7, { align: 'right' });
+  y += 8; // y = 176
+
+  setC(mid); doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  doc.text('VAT (13.5%)', totX + 5, y + 7);
+  setC(slate); doc.text(fmtEuro(vatAmt), tCol3, y + 7, { align: 'right' });
+  y += 8; // y = 184
+
+  setD(rule); doc.setLineWidth(0.3); doc.line(totX, y, M + CW, y);
+  y += 2; // y = 186
+
+  /* Grand total */
+  setF(orange); doc.roundedRect(M, y, CW, 13, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+  doc.text('Total (inc. VAT)', M + 5, y + 9);
+  doc.setFontSize(13);
+  doc.text(fmtEuro(raw), tCol3, y + 9, { align: 'right' });
+  y += 20; // y = 206
+
+  /* -- Payment note -- */
   if (t.paid) {
-    setF([240,253,244]); doc.setDrawColor(green[0],green[1],green[2]); doc.setLineWidth(0.4);
-    doc.roundedRect(M, y, W-M*2, 14, 2, 2, 'FD');
-    doc.setTextColor(green[0],green[1],green[2]); doc.setFont('helvetica','bold'); doc.setFontSize(10);
-    doc.text('✓  Payment Confirmed — Thank you for your payment!', M+5, y+9);
+    setF([235, 250, 240]); setD(green); doc.setLineWidth(0.4);
+    doc.roundedRect(M, y, CW, 14, 2, 2, 'FD');
+    doc.setTextColor(green[0], green[1], green[2]); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+    doc.text('Payment Confirmed - Thank you!', M + 5, y + 9);
   } else {
-    setF([255,243,236]); doc.setDrawColor(orange[0],orange[1],orange[2]); doc.setLineWidth(0.4);
-    doc.roundedRect(M, y, W-M*2, 18, 2, 2, 'FD');
-    setC(orange); doc.setFont('helvetica','bold'); doc.setFontSize(10);
-    doc.text('Payment Due within 7 Days', M+5, y+8);
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setC(navy);
-    doc.text('Please use ticket reference ' + t.ref + ' when making your bank transfer.', M+5, y+14);
+    setF([255, 243, 236]); setD(orange); doc.setLineWidth(0.4);
+    doc.roundedRect(M, y, CW, 18, 2, 2, 'FD');
+    setC(orange); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+    doc.text('Payment due within 14 days', M + 5, y + 8);
+    setC(slate); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+    doc.text('Please use reference ' + t.ref + ' when making payment by bank transfer.', M + 5, y + 14);
   }
 
-  /* ── Footer ── */
-  doc.setDrawColor(229,225,221); doc.setLineWidth(0.3); doc.line(M, H-22, W-M, H-22);
-  setC(gray); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
-  doc.text('Payment terms: Due within 7 days of invoice date.  Thank you for choosing Steady Construction.', W/2, H-15, { align:'center' });
-  doc.text('Steady Construction of Steady Yield. Trading under JMAFG Limited. 20 Harcourt Street, Dublin 2, D02 H364.', W/2, H-9, { align:'center' });
+  /* -- Footer -- */
+  setD(rule); doc.setLineWidth(0.3); doc.line(M, H - 22, W - M, H - 22);
+  setC(mid); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+  doc.text('Payment terms: Net 14 days from invoice date.', M, H - 14);
+  setC(orange); doc.setFont('times', 'italic'); doc.setFontSize(9);
+  doc.text('Thank you for your business.', W - M, H - 14, { align: 'right' });
+  setC(mid); doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+  doc.text('Steady Construction, a trading name of JMAFG Limited. 20 Harcourt Street, Dublin 2, D02 H364.', W / 2, H - 8, { align: 'center' });
 
   doc.save('Invoice-' + invNum + '.pdf');
 }
