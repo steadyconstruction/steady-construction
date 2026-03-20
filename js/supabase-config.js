@@ -115,11 +115,22 @@ function supaUploadFile(file, ticketRef) {
 }
 
 function mapSupaTicketsToAdmin(rows) {
-  adminTickets = rows.map(function(r){
-    return {_id:r.id,ref:r.ref,_clientId:r.client_id||'',client:r.client_name||r.client_id||'',address:r.address||'',type:r.service_type||'',
-      desc:r.description||'',status:r.status||'Pending',priority:r.priority||'Standard',
-      contractor:r.contractor_name||'',scheduled:r.scheduled_at||'',price:r.price||'',
-      paid:r.paid||false,messages:[],contractorMessages:[]};
+  var prev = adminTickets.slice();
+  var now  = Date.now();
+  adminTickets = rows.map(function(r) {
+    var existing = prev.find(function(t){ return t.ref === r.ref; });
+    /* If admin saved this ticket within the last 60s, keep local editable fields
+       so the poll does not overwrite an in-flight or recently committed save. */
+    if (existing && existing._savedAt && (now - existing._savedAt) < 60000) {
+      existing._id      = r.id;
+      existing._clientId = r.client_id || '';
+      return existing;
+    }
+    return {_id:r.id, ref:r.ref, _clientId:r.client_id||'', client:r.client_name||r.client_id||'',
+      address:r.address||'', type:r.service_type||'', desc:r.description||'',
+      status:r.status||'Pending', priority:r.priority||'Standard',
+      contractor:r.contractor_name||'', scheduled:r.scheduled_at||'', price:r.price||'',
+      paid:r.paid||false, messages:[], contractorMessages:[]};
   });
 }
 function mapSupaClientsToAdmin(rows) {

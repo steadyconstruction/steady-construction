@@ -2784,13 +2784,19 @@ function saveAdminTicket(ref) {
   if (c)  t.contractor = c.value;
   if (sc) t.scheduled  = sc.value;
   if (p)  t.price      = p.value;
+  t._savedAt = Date.now(); /* stamp so poll doesn't overwrite this for 60s */
 
-  /* Save to Supabase */
+  /* Save to Supabase — clear stamp on success so poll can refresh freely after */
   supaUpdateTicket(t.ref, {
     status:     t.status,
     contractor: t.contractor,
     scheduled:  t.scheduled,
     price:      t.price
+  }).then(function(r) {
+    if (!r || !r.error) {
+      /* Give 5s for DB to settle, then clear the lock so future polls read fresh data */
+      setTimeout(function() { if (t) t._savedAt = null; }, 5000);
+    }
   });
 
   var msg = document.getElementById('ticket-save-msg');
@@ -2805,7 +2811,10 @@ function setPaymentStatus(ref, paid) {
   var t = adminTickets.find(function(x) { return x.ref === ref; });
   if (!t) return;
   t.paid = paid;
-  supaSetPaid(t.ref, paid);
+  t._savedAt = Date.now();
+  supaSetPaid(t.ref, paid).then(function(r) {
+    if (!r || !r.error) setTimeout(function() { if (t) t._savedAt = null; }, 5000);
+  });
   openAdminTicket(ref);
   renderAdminOverview();
   renderAdminPayments();
