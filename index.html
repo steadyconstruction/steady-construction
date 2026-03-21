@@ -1651,6 +1651,12 @@ function buildPaymentSection(t) {
     }
     revBox.appendChild(mkEl('div', 'font-size:12px;color:#7c3aed;', 'Our team will verify your payment within 1 business day.'));
     wrap.appendChild(revBox);
+    if (t.rawPrice) {
+      var dlBtnR = mkEl('button', 'background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:12px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;display:flex;align-items:center;gap:8px;margin-top:14px;', '↓ Download Invoice (PDF)');
+      dlBtnR.id = 'invoice-dl-btn-' + t.ref;
+      dlBtnR.addEventListener('click', function() { downloadInvoice(t); });
+      wrap.appendChild(dlBtnR);
+    }
 
   /* ── AWAITING PAYMENT — show submission form ── */
   } else if (t.status === 'Completed' || t.payStatus === 'Awaiting Payment') {
@@ -3478,11 +3484,14 @@ function buildInvoicePDF(t, logoDataUrl) {
   y += 2; // y = 52
 
   /* Status badge (top-right) */
-  var badgeColor = t.paid ? green : orange;
-  var badgeText  = t.paid ? 'PAID' : 'AWAITING PAYMENT';
-  setF(badgeColor); doc.roundedRect(W - M - 48, y + 2, 48, 9, 2, 2, 'F');
-  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
-  doc.text(badgeText, W - M - 24, y + 7.5, { align: 'center' });
+  var isPending  = !t.paid && t.paymentStatus === 'pending_verification';
+  var purple     = [124, 58, 237];
+  var badgeColor = t.paid ? green : (isPending ? purple : orange);
+  var badgeText  = t.paid ? 'PAID' : (isPending ? 'PENDING VERIFICATION' : 'AWAITING PAYMENT');
+  var badgeW     = isPending ? 60 : 48;
+  setF(badgeColor); doc.roundedRect(W - M - badgeW, y + 2, badgeW, 9, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5);
+  doc.text(badgeText, W - M - badgeW / 2, y + 7.5, { align: 'center' });
 
   /* Bill To */
   setC(mid); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
@@ -3602,6 +3611,13 @@ function buildInvoicePDF(t, logoDataUrl) {
     doc.roundedRect(M, y, CW, 14, 2, 2, 'FD');
     doc.setTextColor(green[0], green[1], green[2]); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
     doc.text('Payment Confirmed - Thank you!', M + 5, y + 9);
+  } else if (isPending) {
+    setF([245, 243, 255]); setD(purple); doc.setLineWidth(0.4);
+    doc.roundedRect(M, y, CW, 18, 2, 2, 'FD');
+    doc.setTextColor(purple[0], purple[1], purple[2]); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+    doc.text('Payment Submitted — Pending Verification', M + 5, y + 8);
+    setC(slate); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+    doc.text('Our team will verify your payment and confirm within 1 business day.', M + 5, y + 14);
   } else {
     setF([255, 243, 236]); setD(orange); doc.setLineWidth(0.4);
     doc.roundedRect(M, y, CW, 18, 2, 2, 'FD');
