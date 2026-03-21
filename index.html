@@ -825,7 +825,8 @@
       <a href="javascript:void(0)" onclick="openPortal()" style="font-size:13px;color:var(--gray-400);text-decoration:none;cursor:pointer;">Client Login</a>
       <span style="color:var(--gray-200);">·</span>
       <a href="javascript:void(0)" onclick="openAdminModal()" style="font-size:13px;color:var(--gray-200);text-decoration:none;cursor:pointer;">Admin</a>
-
+      <span style="color:var(--gray-200);">·</span>
+      <a href="javascript:void(0)" onclick="openSubcPortal()" style="font-size:13px;color:var(--gray-200);text-decoration:none;cursor:pointer;">SUBC Portal</a>
     </span>
   </div>
 
@@ -1213,6 +1214,12 @@ function tryRestoreSession() {
           document.body.style.overflow = 'hidden';
           initPortal();
         });
+      } else if (savedRole === 'subc' && userData.role === 'subc') {
+        window._subcUser = userData;
+        var subcDash = document.getElementById('subc-dashboard');
+        if (subcDash) subcDash.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        initSubcDashboard();
       }
     });
   });
@@ -2207,6 +2214,135 @@ window.submitNewRequest = submitNewRequest;
   </div>
 </div>
 
+<!-- SUBC LOGIN MODAL -->
+<div id="subc-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(12,10,20,0.82);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:#1a1a2e;border-radius:20px;padding:48px 40px;width:100%;max-width:420px;margin:20px;box-shadow:0 24px 80px rgba(0,0,0,0.5);position:relative;border:1px solid rgba(255,255,255,0.08);">
+    <button onclick="closeSubcPortal()" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;cursor:pointer;color:rgba(255,255,255,0.35);line-height:1;">&#10005;</button>
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="width:52px;height:52px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:18px;font-weight:700;color:#fff;">SC</div>
+      <h3 style="font-size:24px;color:#fff;margin-bottom:6px;font-family:'DM Serif Display',serif;">SUBC Portal</h3>
+      <p style="font-size:14px;color:rgba(255,255,255,0.4);">Subcontractor access only</p>
+    </div>
+    <div id="subc-login-error" style="display:none;background:rgba(212,96,29,0.15);border:1px solid rgba(212,96,29,0.4);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#e87a3a;"></div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.6);display:block;margin-bottom:6px;">Email Address</label>
+        <input id="subc-email" type="email" placeholder="your@email.com" style="width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;background:rgba(255,255,255,0.07);color:#fff;box-sizing:border-box;" onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.6);display:block;margin-bottom:6px;">Password</label>
+        <input id="subc-password" type="password" placeholder="••••••••" style="width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;background:rgba(255,255,255,0.07);color:#fff;box-sizing:border-box;" onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+      </div>
+      <button onclick="window.doSubcLogin()" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Sign In →</button>
+      <p style="text-align:center;font-size:13px;color:rgba(255,255,255,0.25);margin:0;">Forgot password? Contact your admin team.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SUBC DASHBOARD -->
+<div id="subc-dashboard" style="display:none;position:fixed;inset:0;z-index:999;background:#f2f0ee;overflow-y:auto;font-family:'DM Sans',sans-serif;">
+
+  <!-- SUBC Nav -->
+  <div style="background:#1a1a2e;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">SC</div>
+      <div>
+        <div style="font-size:14px;font-weight:600;color:#fff;">Steady Construction</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);">SUBC Portal</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:2px;background:rgba(255,255,255,0.07);border-radius:10px;padding:4px;">
+      <button onclick="switchSubcView('overview')" id="snav-overview" class="atab" style="padding:7px 14px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;background:rgba(124,58,237,0.85);color:#fff;font-family:'DM Sans',sans-serif;white-space:nowrap;">Dashboard</button>
+      <button onclick="switchSubcView('tickets')" id="snav-tickets" class="atab" style="padding:7px 14px;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:rgba(255,255,255,0.55);font-family:'DM Sans',sans-serif;white-space:nowrap;">My Jobs</button>
+      <button onclick="switchSubcView('profile')" id="snav-profile" class="atab" style="padding:7px 14px;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:rgba(255,255,255,0.55);font-family:'DM Sans',sans-serif;white-space:nowrap;">Profile</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="window.logoutSubc()">
+      <div id="subc-nav-avatar" style="width:32px;height:32px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:600;">S</div>
+      <span style="font-size:13px;color:rgba(255,255,255,0.5);">Sign Out</span>
+    </div>
+  </div>
+
+  <!-- SUBC Content -->
+  <div style="max-width:1200px;margin:0 auto;padding:28px 24px;">
+
+    <!-- OVERVIEW VIEW -->
+    <div id="sv-overview">
+      <!-- KPI strip -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;">
+        <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">Total Jobs</div>
+          <div id="sv-kpi-total" style="font-size:28px;font-family:'DM Serif Display',serif;color:#1a1a2e;">0</div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">Outstanding</div>
+          <div id="sv-kpi-inprogress" style="font-size:28px;font-family:'DM Serif Display',serif;color:#D4601D;">0</div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">Awaiting Review</div>
+          <div id="sv-kpi-review" style="font-size:28px;font-family:'DM Serif Display',serif;color:#7c3aed;">0</div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">Completed</div>
+          <div id="sv-kpi-completed" style="font-size:28px;font-family:'DM Serif Display',serif;color:#16a34a;">0</div>
+        </div>
+      </div>
+      <!-- Kanban board -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+        <div style="background:#f5f3ff;border-radius:14px;border:1px solid #c4b5fd;overflow:hidden;">
+          <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #c4b5fd;">
+            <div style="font-size:13px;font-weight:700;color:#7c3aed;">Assigned</div>
+            <span id="svb-assigned-count" style="background:#7c3aed;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+          </div>
+          <div id="svb-assigned" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+        </div>
+        <div style="background:#fff3ec;border-radius:14px;border:1px solid #fed7aa;overflow:hidden;">
+          <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fed7aa;">
+            <div style="font-size:13px;font-weight:700;color:#D4601D;">In Progress</div>
+            <span id="svb-inprogress-count" style="background:#D4601D;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+          </div>
+          <div id="svb-inprogress" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+        </div>
+        <div style="background:#faf5ff;border-radius:14px;border:1px solid #d8b4fe;overflow:hidden;">
+          <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #d8b4fe;">
+            <div style="font-size:13px;font-weight:700;color:#7c3aed;">Awaiting Review</div>
+            <span id="svb-review-count" style="background:#7c3aed;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+          </div>
+          <div id="svb-review" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:14px;border:1px solid #bbf7d0;overflow:hidden;">
+          <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #bbf7d0;">
+            <div style="font-size:13px;font-weight:700;color:#16a34a;">Completed</div>
+            <span id="svb-completed-count" style="background:#16a34a;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+          </div>
+          <div id="svb-completed" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY JOBS LIST VIEW -->
+    <div id="sv-tickets" style="display:none;">
+      <div style="background:#fff;border-radius:14px;border:1px solid #e5e1dd;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #f0f1f3;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:16px;font-weight:700;color:#1a1a2e;">My Jobs</div>
+        </div>
+        <div id="sv-ticket-list-body"></div>
+      </div>
+    </div>
+
+    <!-- TICKET DETAIL VIEW -->
+    <div id="sv-ticket-detail" style="display:none;"></div>
+
+    <!-- PROFILE VIEW -->
+    <div id="sv-profile" style="display:none;">
+      <div style="background:#fff;border-radius:14px;border:1px solid #e5e1dd;padding:28px;max-width:480px;">
+        <h3 style="font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:20px;">My Profile</h3>
+        <div id="sv-profile-body"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ADMIN DASHBOARD -->
 <div id="admin-dashboard" style="display:none;position:fixed;inset:0;z-index:1000;background:#f2f0ee;overflow-y:auto;">
 
@@ -2327,6 +2463,15 @@ window.submitNewRequest = submitNewRequest;
         <div id="board-awaitingpayment" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
       </div>
 
+      <!-- Awaiting Admin Review (SUBC submitted) -->
+      <div style="background:#faf5ff;border-radius:14px;border:1px solid #d8b4fe;overflow:hidden;">
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #d8b4fe;">
+          <div style="font-size:13px;font-weight:700;color:#7c3aed;">Awaiting Review</div>
+          <span id="board-awaitingreview-count" style="background:#7c3aed;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+        </div>
+        <div id="board-awaitingreview" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+      </div>
+
     </div>
 
     <!-- Recent activity -->
@@ -2342,7 +2487,7 @@ window.submitNewRequest = submitNewRequest;
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <select id="filter-status" onchange="renderAdminTickets()" style="border:1px solid var(--gray-200);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;background:#fff;">
           <option value="">All Statuses</option>
-          <option>Pending</option><option>Scheduled</option><option>In Progress</option><option>Completed</option><option>Awaiting Payment</option>
+          <option>Pending</option><option>Assigned</option><option>Scheduled</option><option>In Progress</option><option>Awaiting Admin Review</option><option>Completed</option><option>Awaiting Payment</option><option>Closed</option>
         </select>
         <select id="filter-priority" onchange="renderAdminTickets()" style="border:1px solid var(--gray-200);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;background:#fff;">
           <option value="">All Priorities</option><option>Urgent</option><option>Standard</option>
@@ -2466,11 +2611,12 @@ var ADMIN_STATUS = {
   'Completed':        {bg:'#f0fdf4', col:'#16a34a'},
   'Pending':          {bg:'#fafafa', col:'#9199a8'},
   'Assigned':         {bg:'#f5f3ff', col:'#7c3aed'},
-  'Awaiting Payment': {bg:'#fffbeb', col:'#d97706'},
-  'Paid':             {bg:'#f0fdf4', col:'#16a34a'},
-  'Active':           {bg:'#f0fdf4', col:'#16a34a'},
-  'Inactive':         {bg:'#fafafa', col:'#9199a8'},
-  'Urgent':           {bg:'#fef2f2', col:'#dc2626'}
+  'Awaiting Payment':      {bg:'#fffbeb', col:'#d97706'},
+  'Awaiting Admin Review': {bg:'#faf5ff', col:'#7c3aed'},
+  'Paid':                  {bg:'#f0fdf4', col:'#16a34a'},
+  'Active':                {bg:'#f0fdf4', col:'#16a34a'},
+  'Inactive':              {bg:'#fafafa', col:'#9199a8'},
+  'Urgent':                {bg:'#fef2f2', col:'#dc2626'}
 };
 
 function aPill(text) {
@@ -2598,7 +2744,8 @@ function renderAdminOverview() {
     { id:'scheduled',       statuses:['Scheduled'],         col:'#2563eb' },
     { id:'inprogress',      statuses:['In Progress'],       col:'#D4601D' },
     { id:'completed',       statuses:['Completed'],         col:'#16a34a' },
-    { id:'awaitingpayment', statuses:['Awaiting Payment'],  col:'#dc2626' }
+    { id:'awaitingpayment', statuses:['Awaiting Payment'],  col:'#dc2626' },
+    { id:'awaitingreview',  statuses:['Awaiting Admin Review'], col:'#7c3aed' }
   ];
 
   boards.forEach(function(board) {
@@ -2737,7 +2884,7 @@ function openAdminTicket(ref) {
   var ss = document.createElement('select');
   ss.id = 'et-status';
   ss.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:9px;padding:11px 14px;font-size:14px;font-family:"DM Sans",sans-serif;outline:none;background:#fff;cursor:pointer;box-sizing:border-box;';
-  ['Pending','Assigned','Scheduled','In Progress','Completed','Awaiting Payment','Closed'].forEach(function(s) {
+  ['Pending','Assigned','Scheduled','In Progress','Awaiting Admin Review','Completed','Awaiting Payment','Closed'].forEach(function(s) {
     var o = document.createElement('option'); o.value = s; o.textContent = s;
     if (t.status === s) o.selected = true;
     ss.appendChild(o);
@@ -2757,6 +2904,23 @@ function openAdminTicket(ref) {
     cs.appendChild(o);
   });
   cw.appendChild(cs); grid.appendChild(cw);
+
+  /* SUBC Assignment */
+  var subcW = aEl('div', '');
+  subcW.appendChild(aEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;', 'Assign to SUBC'));
+  var subcSel = document.createElement('select');
+  subcSel.id = 'et-subc';
+  subcSel.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:9px;padding:11px 14px;font-size:14px;font-family:"DM Sans",sans-serif;outline:none;background:#fff;cursor:pointer;box-sizing:border-box;';
+  var subcUnOpt = document.createElement('option'); subcUnOpt.value = ''; subcUnOpt.textContent = '— Not assigned —'; subcSel.appendChild(subcUnOpt);
+  /* Populate subc users asynchronously */
+  supaLoadSubcUsers().then(function(rows) {
+    rows.forEach(function(u) {
+      var o = document.createElement('option'); o.value = u.id; o.textContent = u.full_name + (u.company ? ' (' + u.company + ')' : '');
+      if (t._subcId === u.id) o.selected = true;
+      subcSel.appendChild(o);
+    });
+  });
+  subcW.appendChild(subcSel); grid.appendChild(subcW);
 
   /* Scheduled */
   var scw = aEl('div', '');
@@ -3152,10 +3316,11 @@ function handleContractorFiles(files, ref, thread) {
 function saveAdminTicket(ref) {
   var t = adminTickets.find(function(x) { return x.ref === ref; });
   if (!t) return;
-  var s  = document.getElementById('et-status');
-  var c  = document.getElementById('et-contractor');
-  var sc = document.getElementById('et-scheduled');
-  var p  = document.getElementById('et-price');
+  var s    = document.getElementById('et-status');
+  var c    = document.getElementById('et-contractor');
+  var sc   = document.getElementById('et-scheduled');
+  var p    = document.getElementById('et-price');
+  var subc = document.getElementById('et-subc');
   if (s)  t.status     = s.value;
   if (c)  t.contractor = c.value;
   if (sc) t.scheduled  = sc.value;
@@ -3168,8 +3333,23 @@ function saveAdminTicket(ref) {
   var msg = document.getElementById('ticket-save-msg');
   if (msg) { msg.style.display = 'block'; msg.style.color = '#16a34a'; msg.textContent = 'Saving…'; }
 
+  var saveChain = supaUpdateTicket(t.ref, saved);
+
+  /* If SUBC assignment changed, save separately */
+  if (subc) {
+    var subcId   = subc.value;
+    var subcName = subc.options[subc.selectedIndex] ? subc.options[subc.selectedIndex].textContent.replace(/\s*\(.*\)$/, '') : '';
+    if (subcId !== (t._subcId || '')) {
+      t._subcId   = subcId;
+      t.subcName  = subcId ? subcName : '';
+      saveChain = saveChain.then(function(r) {
+        return supaAssignSubc(t.ref, subcId || null, subcId ? subcName : '').then(function(r2) { return r2.error ? r2 : r; });
+      });
+    }
+  }
+
   /* Save to Supabase via direct REST fetch */
-  supaUpdateTicket(t.ref, saved).then(function(r) {
+  saveChain.then(function(r) {
     if (r && r.error) {
       if (msg) { msg.style.color = '#dc2626'; msg.textContent = 'Save failed: ' + r.error.message; }
     } else {
@@ -3399,7 +3579,16 @@ function renderContractorCards() {
     card.appendChild(aEl('div', 'font-size:13px;color:'+ti.tc+';font-weight:600;margin-bottom:10px;', c.trade));
     card.appendChild(aEl('div', 'font-size:13px;color:#9199a8;margin-bottom:2px;', c.phone));
     card.appendChild(aEl('div', 'font-size:13px;color:#9199a8;margin-bottom:12px;', c.email));
-    card.appendChild(aEl('div', 'font-size:12px;color:#9199a8;', c.jobs + ' jobs completed'));
+    card.appendChild(aEl('div', 'font-size:12px;color:#9199a8;margin-bottom:14px;', c.jobs + ' jobs completed'));
+    /* SUBC Login button */
+    var subcBtn = aEl('button', 'background:#f5f3ff;color:#7c3aed;border:1px solid #c4b5fd;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;width:100%;', '+ Create SUBC Login');
+    (function(contractor) {
+      subcBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openCreateSubcLogin(contractor);
+      });
+    })(c);
+    card.appendChild(subcBtn);
     container.appendChild(card);
   });
 }
@@ -3505,6 +3694,84 @@ function renderAdminPayments() {
   });
 }
 
+/* ── CREATE SUBC LOGIN (Admin) ── */
+function openCreateSubcLogin(contractor) {
+  /* Build a simple inline modal */
+  var existing = document.getElementById('subc-create-modal');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'subc-create-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:32px;width:100%;max-width:420px;margin:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+
+  var title = aEl('div', 'font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:4px;', 'Create SUBC Login');
+  var sub = aEl('div', 'font-size:13px;color:#9199a8;margin-bottom:20px;', 'Create portal access for ' + contractor.name);
+  box.appendChild(title); box.appendChild(sub);
+
+  var errEl = aEl('div', 'display:none;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;', '');
+  box.appendChild(errEl);
+
+  /* Email (pre-filled from contractor) */
+  var emailLbl = aEl('label', 'font-size:12px;font-weight:600;color:#4a5264;display:block;margin-bottom:5px;', 'Email Address');
+  var emailInp = document.createElement('input'); emailInp.type='email'; emailInp.value = contractor.email||'';
+  emailInp.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:14px;font-family:"DM Sans",sans-serif;outline:none;margin-bottom:12px;box-sizing:border-box;';
+  box.appendChild(emailLbl); box.appendChild(emailInp);
+
+  /* Password */
+  var passLbl = aEl('label', 'font-size:12px;font-weight:600;color:#4a5264;display:block;margin-bottom:5px;', 'Initial Password');
+  var passInp = document.createElement('input'); passInp.type='password'; passInp.placeholder='Min 6 characters';
+  passInp.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:14px;font-family:"DM Sans",sans-serif;outline:none;margin-bottom:20px;box-sizing:border-box;';
+  box.appendChild(passLbl); box.appendChild(passInp);
+
+  var btnRow = aEl('div', 'display:flex;gap:10px;');
+  var saveBtn = aEl('button', 'background:#7c3aed;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Create Login');
+  var cancelBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Cancel');
+  cancelBtn.addEventListener('click', function(){ overlay.remove(); });
+
+  saveBtn.addEventListener('click', function() {
+    var email = emailInp.value.trim().toLowerCase();
+    var pass  = passInp.value;
+    if (!email || !pass) { errEl.style.display='block'; errEl.textContent='Please fill in both fields.'; return; }
+    if (pass.length < 6) { errEl.style.display='block'; errEl.textContent='Password must be at least 6 characters.'; return; }
+    saveBtn.disabled = true; saveBtn.textContent = 'Creating…';
+    errEl.style.display = 'none';
+
+    /* Use a temporary supabase client to avoid signing out the admin */
+    var tempKey = _k1 + _k2 + _k3;
+    var tempClient = supabase.createClient(SUPA_URL, tempKey, { auth: { persistSession: false, storageKey: 'subc-tmp-' + Date.now() } });
+    tempClient.auth.signUp({ email: email, password: pass }).then(function(result) {
+      if (result.error) {
+        saveBtn.disabled = false; saveBtn.textContent = 'Create Login';
+        errEl.style.display = 'block'; errEl.textContent = result.error.message;
+        return;
+      }
+      /* Insert into users table */
+      supaCreateSubcUser(email, contractor.name, contractor.trade, contractor.phone).then(function(res) {
+        if (res.error && res.error.code !== '23505') { /* 23505 = duplicate key, already exists */
+          saveBtn.disabled = false; saveBtn.textContent = 'Create Login';
+          errEl.style.display = 'block'; errEl.textContent = res.error.message;
+          return;
+        }
+        overlay.remove();
+        /* Brief success toast */
+        var toast = aEl('div', 'position:fixed;bottom:24px;right:24px;z-index:3000;background:#7c3aed;color:#fff;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:600;font-family:"DM Sans",sans-serif;box-shadow:0 4px 16px rgba(124,58,237,0.4);', '✓ SUBC login created for ' + contractor.name);
+        document.body.appendChild(toast);
+        setTimeout(function(){ toast.remove(); }, 4000);
+      });
+    });
+  });
+
+  btnRow.appendChild(saveBtn); btnRow.appendChild(cancelBtn);
+  box.appendChild(btnRow);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  setTimeout(function(){ emailInp.focus(); }, 50);
+}
+
 /* ── EXPOSE GLOBALS ── */
 window.openAdminModal = openAdminModal;
 window.closeAdminModal = closeAdminModal;
@@ -3525,6 +3792,7 @@ window.renderAdminPayments = renderAdminPayments;
 window.renderAdminOverview = renderAdminOverview;
 window.refreshAdminData = refreshAdminData;
 window.postContractorMsg = postContractorMsg;
+window.openCreateSubcLogin = openCreateSubcLogin;
 
 /* ══════════════════════════════════════════════
    INVOICE DOWNLOAD SYSTEM
@@ -3891,9 +4159,434 @@ function downloadAttachment(url, fileName) {
 }
 </script>
 
+<script>
+/* ══════════════════════════════════════════════════════════════
+   SUBC PORTAL — Subcontractor Portal
+   ══════════════════════════════════════════════════════════════ */
+
+var subcTickets = [];
+var _subcPollInterval = null;
+
+/* ── OPEN / CLOSE / LOGIN ── */
+function openSubcPortal() {
+  document.getElementById('subc-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeSubcPortal() {
+  document.getElementById('subc-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function doSubcLogin() {
+  var email = ((document.getElementById('subc-email') || {}).value || '').trim().toLowerCase();
+  var pass  = (document.getElementById('subc-password') || {}).value || '';
+  var err   = document.getElementById('subc-login-error');
+  if (!email || !pass) { err.style.display='block'; err.textContent='Please enter your email and password.'; return; }
+  err.style.display='block'; err.style.color='#e87a3a'; err.textContent='Signing in…';
+  supaSignIn(email, pass).then(function(result) {
+    if (result.error) { err.style.display='block'; err.style.color='#e87a3a'; err.textContent='Incorrect email or password.'; return; }
+    supaGetRole(email).then(function(userData) {
+      if (!userData || userData.role !== 'subc') {
+        supaSignOut();
+        err.style.display='block'; err.style.color='#e87a3a'; err.textContent='No subcontractor account found for this email.';
+        return;
+      }
+      window._subcUser = userData;
+      localStorage.setItem('sc_portal_role', 'subc');
+      closeSubcPortal();
+      var dash = document.getElementById('subc-dashboard');
+      if (dash) dash.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      initSubcDashboard();
+    });
+  });
+}
+function logoutSubc() {
+  supaSignOut();
+  localStorage.removeItem('sc_portal_role');
+  if (_subcPollInterval) { clearInterval(_subcPollInterval); _subcPollInterval = null; }
+  var dash = document.getElementById('subc-dashboard');
+  if (dash) dash.style.display = 'none';
+  document.body.style.overflow = '';
+}
+window.addEventListener('load', function() {
+  var pw = document.getElementById('subc-password');
+  if (pw) pw.addEventListener('keydown', function(e){ if(e.key==='Enter') doSubcLogin(); });
+});
+
+/* ── INIT ── */
+function initSubcDashboard() {
+  var u = window._subcUser || {};
+  var avatar = document.getElementById('subc-nav-avatar');
+  if (avatar && u.full_name) avatar.textContent = u.full_name.charAt(0).toUpperCase();
+  switchSubcView('overview');
+  loadSubcData();
+  if (_subcPollInterval) clearInterval(_subcPollInterval);
+  _subcPollInterval = setInterval(loadSubcData, 30000);
+}
+
+function loadSubcData() {
+  if (!window._subcUser) return;
+  supaLoadSubcTickets(window._subcUser.id).then(function(rows) {
+    subcTickets = (rows || []).map(function(r) {
+      return {
+        _id: r.id, ref: r.ref, client: r.client_name||'', address: r.address||'',
+        type: r.service_type||'', desc: r.description||'', status: r.status||'Assigned',
+        scheduled: r.scheduled_at||'', price: r.price||'', contractor: r.contractor_name||'',
+        created_at: r.created_at||''
+      };
+    });
+    renderSubcOverview();
+    renderSubcTicketList();
+  });
+}
+
+/* ── NAV ── */
+function switchSubcView(view) {
+  ['overview','tickets','profile'].forEach(function(v) {
+    var el = document.getElementById('sv-' + v);
+    var btn = document.getElementById('snav-' + v);
+    if (el) el.style.display = 'none';
+    if (btn) { btn.style.background='transparent'; btn.style.color='rgba(255,255,255,0.55)'; btn.style.fontWeight='500'; }
+  });
+  var detail = document.getElementById('sv-ticket-detail');
+  if (detail) detail.style.display = 'none';
+  var el  = document.getElementById('sv-' + view);
+  var btn = document.getElementById('snav-' + view);
+  if (el) el.style.display = 'block';
+  if (btn) { btn.style.background='rgba(124,58,237,0.85)'; btn.style.color='#fff'; btn.style.fontWeight='600'; }
+  if (view === 'profile') renderSubcProfile();
+}
+
+/* ── OVERVIEW ── */
+function renderSubcOverview() {
+  var total     = subcTickets.length;
+  var outstanding = subcTickets.filter(function(t){ return t.status === 'Assigned' || t.status === 'Scheduled' || t.status === 'In Progress'; }).length;
+  var review    = subcTickets.filter(function(t){ return t.status === 'Awaiting Admin Review'; }).length;
+  var completed = subcTickets.filter(function(t){ return t.status === 'Completed' || t.status === 'Closed'; }).length;
+  var kpis = { 'sv-kpi-total': total, 'sv-kpi-inprogress': outstanding, 'sv-kpi-review': review, 'sv-kpi-completed': completed };
+  Object.keys(kpis).forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = kpis[id]; });
+
+  var cols = [
+    { id:'svb-assigned',   countId:'svb-assigned-count',   fn:function(t){ return t.status==='Assigned'||t.status==='Scheduled'; } },
+    { id:'svb-inprogress', countId:'svb-inprogress-count', fn:function(t){ return t.status==='In Progress'; } },
+    { id:'svb-review',     countId:'svb-review-count',     fn:function(t){ return t.status==='Awaiting Admin Review'; } },
+    { id:'svb-completed',  countId:'svb-completed-count',  fn:function(t){ return t.status==='Completed'||t.status==='Closed'; } }
+  ];
+  cols.forEach(function(col) {
+    var el    = document.getElementById(col.id);
+    var badge = document.getElementById(col.countId);
+    if (!el) return;
+    el.innerHTML = '';
+    var tickets = subcTickets.filter(col.fn);
+    if (badge) badge.textContent = tickets.length;
+    if (!tickets.length) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'text-align:center;color:#9199a8;font-size:12px;padding:16px 8px;';
+      empty.textContent = 'No jobs'; el.appendChild(empty); return;
+    }
+    tickets.forEach(function(t) { el.appendChild(makeSubcCard(t)); });
+  });
+}
+
+function makeSubcCard(t) {
+  var card = document.createElement('div');
+  card.style.cssText = 'background:#fff;border-radius:10px;padding:12px 14px;border:1px solid #e5e1dd;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;';
+  card.addEventListener('mouseover', function(){ card.style.borderColor='#7c3aed'; card.style.boxShadow='0 2px 8px rgba(124,58,237,0.12)'; });
+  card.addEventListener('mouseout',  function(){ card.style.borderColor='#e5e1dd'; card.style.boxShadow='none'; });
+  var refEl = document.createElement('div');
+  refEl.style.cssText = 'font-size:11px;font-weight:700;color:#7c3aed;letter-spacing:0.5px;margin-bottom:4px;';
+  refEl.textContent = t.ref;
+  var addrEl = document.createElement('div');
+  addrEl.style.cssText = 'font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:2px;';
+  addrEl.textContent = t.address.length > 35 ? t.address.substring(0,35)+'…' : t.address;
+  var typeEl = document.createElement('div');
+  typeEl.style.cssText = 'font-size:12px;color:#9199a8;';
+  typeEl.textContent = t.type;
+  card.appendChild(refEl); card.appendChild(addrEl); card.appendChild(typeEl);
+  if (t.scheduled) {
+    var schEl = document.createElement('div');
+    schEl.style.cssText = 'font-size:11px;color:#4a5264;margin-top:6px;';
+    schEl.textContent = '📅 ' + t.scheduled;
+    card.appendChild(schEl);
+  }
+  card.addEventListener('click', function(){ openSubcTicket(t.ref); });
+  return card;
+}
+
+/* ── TICKET LIST ── */
+function renderSubcTicketList() {
+  var container = document.getElementById('sv-ticket-list-body');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!subcTickets.length) {
+    var empty = document.createElement('div');
+    empty.style.cssText = 'padding:30px;text-align:center;color:#9199a8;font-size:13px;';
+    empty.textContent = 'No jobs assigned yet.';
+    container.appendChild(empty); return;
+  }
+  subcTickets.forEach(function(t) {
+    var row = document.createElement('div');
+    row.style.cssText = 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:flex;gap:12px;align-items:center;cursor:pointer;transition:background 0.15s;';
+    row.addEventListener('mouseover', function(){ row.style.background='#f9f8f7'; });
+    row.addEventListener('mouseout',  function(){ row.style.background=''; });
+    var refDiv = document.createElement('div'); refDiv.style.cssText='flex:0 0 110px;font-size:12px;font-weight:700;color:#7c3aed;'; refDiv.textContent=t.ref;
+    var addrDiv = document.createElement('div'); addrDiv.style.cssText='flex:1;font-size:14px;color:#1a1a2e;font-weight:500;'; addrDiv.textContent=t.address;
+    var typeDiv = document.createElement('div'); typeDiv.style.cssText='flex:0 0 140px;font-size:13px;color:#4a5264;'; typeDiv.textContent=t.type;
+    var statusColors = { 'Assigned':'#f5f3ff,#7c3aed','Scheduled':'#eff6ff,#2563eb','In Progress':'#fff7ed,#d97706','Awaiting Admin Review':'#faf5ff,#7c3aed','Completed':'#f0fdf4,#16a34a','Closed':'#f0f1f3,#9199a8' };
+    var sc = (statusColors[t.status]||'#f0f1f3,#9199a8').split(',');
+    var badge = document.createElement('span');
+    badge.style.cssText = 'flex:0 0 160px;display:inline-block;background:'+sc[0]+';color:'+sc[1]+';font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;';
+    badge.textContent = t.status;
+    var dateDiv = document.createElement('div'); dateDiv.style.cssText='flex:0 0 90px;font-size:12px;color:#9199a8;text-align:right;'; dateDiv.textContent=t.scheduled?t.scheduled.substring(0,10):'—';
+    row.appendChild(refDiv); row.appendChild(addrDiv); row.appendChild(typeDiv); row.appendChild(badge); row.appendChild(dateDiv);
+    row.addEventListener('click', function(){ openSubcTicket(t.ref); });
+    container.appendChild(row);
+  });
+}
+
+/* ── TICKET DETAIL ── */
+function openSubcTicket(ref) {
+  var t = subcTickets.find(function(x){ return x.ref === ref; });
+  if (!t) return;
+  ['overview','tickets','profile'].forEach(function(v){ var el=document.getElementById('sv-'+v); if(el) el.style.display='none'; });
+  ['snav-overview','snav-tickets','snav-profile'].forEach(function(id){ var b=document.getElementById(id); if(b){b.style.background='transparent';b.style.color='rgba(255,255,255,0.55)';b.style.fontWeight='500';} });
+  var detail = document.getElementById('sv-ticket-detail');
+  if (!detail) return;
+  detail.style.display = 'block';
+  detail.innerHTML = '';
+
+  /* Back */
+  var back = document.createElement('button');
+  back.style.cssText='background:rgba(124,58,237,0.1);color:#7c3aed;border:1px solid #c4b5fd;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:"DM Sans",sans-serif;margin-bottom:20px;font-weight:600;';
+  back.textContent='← Back to My Jobs';
+  back.addEventListener('click', function(){ switchSubcView('tickets'); });
+  detail.appendChild(back);
+
+  /* Header card */
+  var header = document.createElement('div');
+  header.style.cssText='background:#fff;border-radius:14px;padding:24px;border:1px solid #e5e1dd;margin-bottom:16px;';
+
+  var topRow = document.createElement('div');
+  topRow.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px;';
+  var refInfo = document.createElement('div');
+  var refLbl = document.createElement('div'); refLbl.style.cssText='font-size:11px;font-weight:700;color:#7c3aed;letter-spacing:0.5px;margin-bottom:4px;'; refLbl.textContent=t.ref;
+  var addrH = document.createElement('div'); addrH.style.cssText='font-size:20px;font-weight:700;color:#1a1a2e;font-family:"DM Serif Display",serif;'; addrH.textContent=t.address;
+  refInfo.appendChild(refLbl); refInfo.appendChild(addrH);
+  var statusColors2 = { 'Assigned':'#f5f3ff,#7c3aed','Scheduled':'#eff6ff,#2563eb','In Progress':'#fff7ed,#d97706','Awaiting Admin Review':'#faf5ff,#7c3aed','Completed':'#f0fdf4,#16a34a','Closed':'#f0f1f3,#9199a8' };
+  var sc2 = (statusColors2[t.status]||'#f0f1f3,#9199a8').split(',');
+  var statBadge = document.createElement('span');
+  statBadge.style.cssText='background:'+sc2[0]+';color:'+sc2[1]+';font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;flex-shrink:0;';
+  statBadge.textContent=t.status;
+  topRow.appendChild(refInfo); topRow.appendChild(statBadge);
+  header.appendChild(topRow);
+
+  var grid = document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;';
+  [['Service Type',t.type],['Scheduled',t.scheduled||'To be confirmed'],['Estimate',t.price||'Pending'],['Client',t.client]].forEach(function(pair) {
+    var item = document.createElement('div'); item.style.cssText='background:#f7f8fa;border-radius:9px;padding:12px 14px;';
+    var lbl = document.createElement('div'); lbl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#9199a8;margin-bottom:4px;'; lbl.textContent=pair[0];
+    var val = document.createElement('div'); val.style.cssText='font-size:13px;font-weight:600;color:#1a1a2e;'; val.textContent=pair[1];
+    item.appendChild(lbl); item.appendChild(val); grid.appendChild(item);
+  });
+  header.appendChild(grid);
+
+  var descLbl = document.createElement('div'); descLbl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#9199a8;margin-bottom:6px;'; descLbl.textContent='Job Description';
+  var descBox = document.createElement('div'); descBox.style.cssText='background:#f7f8fa;border-radius:9px;padding:14px;font-size:13px;color:#4a5264;line-height:1.6;border:1px solid #e5e1dd;white-space:pre-wrap;word-break:break-word;'; descBox.textContent=t.desc||'No description provided.';
+  header.appendChild(descLbl); header.appendChild(descBox);
+  detail.appendChild(header);
+
+  /* Mark Job Done / Awaiting Review banner */
+  if (t.status === 'Awaiting Admin Review') {
+    var reviewBanner = document.createElement('div');
+    reviewBanner.style.cssText='background:#faf5ff;border:1.5px solid #a855f7;border-radius:14px;padding:20px;margin-bottom:16px;text-align:center;';
+    reviewBanner.innerHTML='<div style="font-size:28px;margin-bottom:8px;">⏳</div><div style="font-size:15px;font-weight:700;color:#7c3aed;margin-bottom:4px;">Awaiting Admin Review</div><div style="font-size:13px;color:#6d28d9;">Your job has been submitted for review. Admin will confirm completion.</div>';
+    detail.appendChild(reviewBanner);
+  } else if (t.status !== 'Completed' && t.status !== 'Closed') {
+    var doneWrap = document.createElement('div');
+    doneWrap.style.cssText='background:#faf5ff;border:1px solid #d8b4fe;border-radius:14px;padding:20px;margin-bottom:16px;';
+    var doneTitle = document.createElement('div'); doneTitle.style.cssText='font-size:15px;font-weight:700;color:#7c3aed;margin-bottom:6px;'; doneTitle.textContent='Mark Job as Done';
+    var doneDesc = document.createElement('div'); doneDesc.style.cssText='font-size:13px;color:#6d28d9;margin-bottom:14px;'; doneDesc.textContent='Upload completion photos in the chat below, then click "Mark Job Done" to submit for admin review.';
+    var doneBtn = document.createElement('button');
+    doneBtn.id='subc-done-btn';
+    doneBtn.style.cssText='background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:"DM Sans",sans-serif;';
+    doneBtn.textContent='✓ Mark Job Done';
+    doneBtn.addEventListener('click', function(){ markSubcJobDone(t.ref); });
+    doneWrap.appendChild(doneTitle); doneWrap.appendChild(doneDesc); doneWrap.appendChild(doneBtn);
+    detail.appendChild(doneWrap);
+  }
+
+  /* Chat */
+  var chatWrap = document.createElement('div');
+  chatWrap.style.cssText='background:#fff;border-radius:14px;border:1px solid #e5e1dd;overflow:hidden;';
+
+  var chatHdr = document.createElement('div'); chatHdr.style.cssText='padding:14px 20px;border-bottom:1px solid #f0f1f3;background:#f9f8f7;';
+  var chatTitle = document.createElement('div'); chatTitle.style.cssText='font-size:14px;font-weight:700;color:#1a1a2e;'; chatTitle.textContent='Job Chat';
+  var chatSub = document.createElement('div'); chatSub.style.cssText='font-size:12px;color:#9199a8;margin-top:2px;'; chatSub.textContent='Communication with admin — messages are permanent';
+  chatHdr.appendChild(chatTitle); chatHdr.appendChild(chatSub);
+  chatWrap.appendChild(chatHdr);
+
+  var thread = document.createElement('div');
+  thread.id='subc-chat-thread';
+  thread.style.cssText='padding:16px;min-height:120px;max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;';
+  chatWrap.appendChild(thread);
+
+  var fileInp = document.createElement('input');
+  fileInp.type='file'; fileInp.id='subc-chat-file'; fileInp.multiple=true; fileInp.accept='image/*,.pdf,.doc,.docx'; fileInp.style.display='none';
+  fileInp.addEventListener('change', function(){ handleSubcFiles(fileInp.files, t.ref, t._id, thread); fileInp.value=''; });
+  chatWrap.appendChild(fileInp);
+
+  var inputBar = document.createElement('div');
+  inputBar.style.cssText='padding:12px 16px;border-top:1px solid #f0f1f3;display:flex;gap:8px;align-items:flex-end;background:#fff;';
+
+  var attachBtn = document.createElement('button');
+  attachBtn.style.cssText='background:#f0f1f3;color:#4a5264;border:none;width:36px;height:36px;border-radius:8px;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;';
+  attachBtn.textContent='📎'; attachBtn.title='Attach file / photo';
+  attachBtn.addEventListener('click', function(){ fileInp.click(); });
+
+  var msgInput = document.createElement('textarea');
+  msgInput.id='subc-chat-input'; msgInput.placeholder='Type a message…';
+  msgInput.style.cssText='flex:1;border:1px solid #e5e1dd;border-radius:9px;padding:9px 12px;font-size:13px;font-family:"DM Sans",sans-serif;resize:none;outline:none;line-height:1.5;max-height:100px;overflow-y:auto;';
+  msgInput.rows=1;
+  msgInput.addEventListener('focus', function(){ msgInput.style.borderColor='#7c3aed'; });
+  msgInput.addEventListener('blur',  function(){ msgInput.style.borderColor='#e5e1dd'; });
+  msgInput.addEventListener('keydown', function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendSubcMessage(t.ref, t._id, thread); } });
+
+  var sendBtn = document.createElement('button');
+  sendBtn.style.cssText='background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;padding:0 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;flex-shrink:0;height:36px;';
+  sendBtn.textContent='Send';
+  sendBtn.addEventListener('click', function(){ sendSubcMessage(t.ref, t._id, thread); });
+
+  inputBar.appendChild(attachBtn); inputBar.appendChild(msgInput); inputBar.appendChild(sendBtn);
+  chatWrap.appendChild(inputBar);
+  detail.appendChild(chatWrap);
+
+  loadSubcChatMessages(t._id, thread);
+}
+
+/* ── CHAT ── */
+function loadSubcChatMessages(ticketId, thread) {
+  thread.innerHTML='<div style="text-align:center;color:#9199a8;font-size:13px;padding:20px 0;">Loading messages…</div>';
+  supaLoadContractorMessages(ticketId).then(function(rows) {
+    thread.innerHTML='';
+    if (!rows||!rows.length) {
+      var empty=document.createElement('div'); empty.style.cssText='text-align:center;color:#9199a8;font-size:13px;padding:20px 0;'; empty.textContent='No messages yet. Start the conversation.';
+      thread.appendChild(empty); return;
+    }
+    rows.forEach(function(m){ thread.appendChild(buildSubcMsgBubble(m)); });
+    thread.scrollTop=thread.scrollHeight;
+  });
+}
+
+function buildSubcMsgBubble(m) {
+  var isMe = m.sender_role==='subc'||m.sender_role==='contractor';
+  var wrap = document.createElement('div');
+  wrap.style.cssText='display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+';';
+  var senderEl = document.createElement('div');
+  senderEl.style.cssText='font-size:11px;color:#9199a8;margin-bottom:3px;';
+  senderEl.textContent=(m.sender_name||m.sender_role)+' · '+formatSubcTime(m.created_at);
+  var bubble = document.createElement('div');
+  bubble.style.cssText='max-width:75%;border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.5;word-break:break-word;'+(isMe?'background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border-radius:12px 12px 2px 12px;':'background:#f0f1f3;color:#1a1a2e;border-radius:12px 12px 12px 2px;');
+  if (m.file_url) {
+    if (m.is_image) {
+      var img=document.createElement('img'); img.src=m.file_url; img.alt=m.file_name||'image';
+      img.style.cssText='max-width:200px;border-radius:8px;display:block;cursor:pointer;margin-bottom:'+(m.message?'6px':'0')+';';
+      (function(url,name){ img.addEventListener('click',function(){ openAttachmentPreview(url,name,true); }); })(m.file_url,m.file_name);
+      bubble.appendChild(img);
+    } else {
+      var fileLink=document.createElement('div');
+      fileLink.style.cssText='display:flex;align-items:center;gap:6px;cursor:pointer;text-decoration:underline;margin-bottom:'+(m.message?'4px':'0')+';font-size:13px;';
+      fileLink.textContent='📎 '+(m.file_name||'attachment');
+      (function(url,name){ fileLink.addEventListener('click',function(){ openAttachmentPreview(url,name,false); }); })(m.file_url,m.file_name);
+      bubble.appendChild(fileLink);
+    }
+  }
+  if (m.message) { var txt=document.createElement('span'); txt.textContent=m.message; bubble.appendChild(txt); }
+  wrap.appendChild(senderEl); wrap.appendChild(bubble);
+  return wrap;
+}
+
+function formatSubcTime(ts) {
+  if (!ts) return '';
+  try { var d=new Date(ts); return d.toLocaleDateString('en-IE',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return ts; }
+}
+
+function sendSubcMessage(ref, ticketId, thread) {
+  var input=document.getElementById('subc-chat-input');
+  var body=(input?input.value:'').trim();
+  if (!body) return;
+  var u=window._subcUser||{};
+  input.value='';
+  supaPostContractorMessage(ticketId,'subc',u.full_name||'Subcontractor',body,null,null,false).then(function(){
+    supaLoadContractorMessages(ticketId).then(function(rows){
+      thread.innerHTML='';
+      (rows||[]).forEach(function(m){ thread.appendChild(buildSubcMsgBubble(m)); });
+      thread.scrollTop=thread.scrollHeight;
+    });
+  });
+}
+
+function handleSubcFiles(files, ref, ticketId, thread) {
+  if (!files||!files.length) return;
+  var u=window._subcUser||{};
+  Array.prototype.reduce.call(files, function(p, file) {
+    return p.then(function(){
+      return supaUploadFile(file, ref).then(function(url){
+        if (!url) return;
+        return supaPostContractorMessage(ticketId,'subc',u.full_name||'Subcontractor','',file.name,url,file.type.startsWith('image/'));
+      });
+    });
+  }, Promise.resolve()).then(function(){
+    supaLoadContractorMessages(ticketId).then(function(rows){
+      thread.innerHTML='';
+      (rows||[]).forEach(function(m){ thread.appendChild(buildSubcMsgBubble(m)); });
+      thread.scrollTop=thread.scrollHeight;
+    });
+  });
+}
+
+function markSubcJobDone(ref) {
+  var btn=document.getElementById('subc-done-btn');
+  if (btn){ btn.disabled=true; btn.textContent='Submitting…'; }
+  supaMarkSubcJobDone(ref).then(function(result){
+    if (result&&result.error){ if(btn){btn.disabled=false;btn.textContent='✓ Mark Job Done';} alert('Error: '+result.error.message); return; }
+    loadSubcData();
+    /* Re-open ticket after short delay to show updated status */
+    setTimeout(function(){
+      var t=subcTickets.find(function(x){return x.ref===ref;});
+      if (t){ t.status='Awaiting Admin Review'; openSubcTicket(ref); }
+    }, 800);
+  });
+}
+
+/* ── PROFILE ── */
+function renderSubcProfile() {
+  var container=document.getElementById('sv-profile-body');
+  if (!container) return;
+  container.innerHTML='';
+  var u=window._subcUser||{};
+  [['Full Name',u.full_name||'—'],['Email',u.email||'—'],['Phone',u.phone||'—'],['Trade',u.company||'—']].forEach(function(pair){
+    var row=document.createElement('div'); row.style.cssText='display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f0f1f3;';
+    var lbl=document.createElement('div'); lbl.style.cssText='flex:0 0 120px;font-size:12px;font-weight:600;color:#9199a8;text-transform:uppercase;letter-spacing:0.5px;padding-top:2px;'; lbl.textContent=pair[0];
+    var val=document.createElement('div'); val.style.cssText='font-size:14px;color:#1a1a2e;font-weight:500;'; val.textContent=pair[1];
+    row.appendChild(lbl); row.appendChild(val); container.appendChild(row);
+  });
+  var logoutBtn=document.createElement('button');
+  logoutBtn.style.cssText='margin-top:20px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;padding:10px 20px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;';
+  logoutBtn.textContent='Sign Out';
+  logoutBtn.addEventListener('click', logoutSubc);
+  container.appendChild(logoutBtn);
+}
+
+window.openSubcPortal  = openSubcPortal;
+window.closeSubcPortal = closeSubcPortal;
+window.doSubcLogin     = doSubcLogin;
+window.logoutSubc      = logoutSubc;
+window.switchSubcView  = switchSubcView;
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="js/supabase-config.js?v=7"></script>
+<script src="js/supabase-config.js?v=8"></script>
 
 
 

@@ -202,6 +202,7 @@ function mapSupaTicketsToAdmin(rows) {
       contractor:r.contractor_name||'', scheduled:r.scheduled_at||'', price:r.price||'',
       paid:r.paid||false, payRef:r.pay_ref||'', payMethod:r.payment_method||'',
       payProofUrl:r.payment_proof_url||'', paymentStatus:r.payment_status||null,
+      _subcId:r.subc_id||'', subcName:r.subc_name||'',
       created_at:r.created_at||'', updated_at:r.updated_at||'',
       messages:[], contractorMessages:[]};
   });
@@ -215,4 +216,30 @@ function mapSupaContractorsToAdmin(rows) {
   adminContractors = rows.map(function(r){
     return {_id:r.id,name:r.full_name,trade:r.trade,phone:r.phone||'',email:r.email||'',jobs:r.jobs_count||0,active:r.is_active};
   });
+}
+
+/* ── SUBC (Subcontractor Portal) ── */
+function supaLoadSubcTickets(subcId) {
+  initSupabase();
+  if (!supa) return Promise.resolve([]);
+  return supa.from('tickets').select('*').eq('subc_id', subcId).order('created_at',{ascending:false}).then(function(r){ return r.data||[]; });
+}
+function supaLoadSubcUsers() {
+  initSupabase();
+  if (!supa) return Promise.resolve([]);
+  return supa.from('users').select('*').eq('role','subc').then(function(r){ return r.data||[]; });
+}
+function supaCreateSubcUser(email, fullName, trade, phone) {
+  initSupabase();
+  return supa.from('users').insert([{email:email,full_name:fullName,phone:phone||'',company:trade||'',role:'subc'}]).select().single();
+}
+function supaAssignSubc(ref, subcId, subcName) {
+  if (!ref) return Promise.resolve({ error:{ message:'no ref' } });
+  var payload = { subc_id: subcId || null };
+  if (subcName !== undefined) payload.subc_name = subcName || null;
+  return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), payload);
+}
+function supaMarkSubcJobDone(ref) {
+  if (!ref) return Promise.resolve({ error:{ message:'no ref' } });
+  return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), { status: 'Awaiting Admin Review' });
 }
