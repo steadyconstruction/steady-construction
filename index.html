@@ -1074,7 +1074,10 @@ function mapSupaTicketsToPortal(rows) {
       rawPrice: r.price || '',
       paid: r.paid || false,
       payRef: r.pay_ref || '',
-      payStatus: r.paid ? 'Paid' : 'Awaiting Payment',
+      payMethod: r.payment_method || '',
+      payProofUrl: r.payment_proof_url || '',
+      paymentStatus: r.payment_status || null,
+      payStatus: r.paid ? 'Paid' : (r.payment_status === 'pending_verification' ? 'Under Review' : (r.payment_status === 'rejected' ? 'Awaiting Payment' : 'Awaiting Payment')),
       created_at: r.created_at || '',
       progress: r.status === 'Completed' ? 4 : r.status === 'In Progress' ? 3 : r.status === 'Scheduled' ? 2 : 1,
       messages: []
@@ -1610,6 +1613,8 @@ function sendPortalFile(ref, file) {
 /* ── PAYMENT SECTION ── */
 function buildPaymentSection(t) {
   var wrap = mkEl('div', '');
+
+  /* ── PAID ── */
   if (t.payStatus === 'Paid') {
     var paidBox = mkEl('div', 'background:#f0fdf4;border:1.5px solid #16a34a;border-radius:14px;padding:20px 22px;');
     var pr = mkEl('div', 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;');
@@ -1626,71 +1631,88 @@ function buildPaymentSection(t) {
       dlBtn1.addEventListener('click', function() { downloadInvoice(t); });
       wrap.appendChild(dlBtn1);
     }
+
+  /* ── PENDING VERIFICATION ── */
   } else if (t.payStatus === 'Under Review') {
     var revBox = mkEl('div', 'background:#f5f3ff;border:1.5px solid #7c3aed;border-radius:14px;padding:20px 22px;');
-    var rr2 = mkEl('div', 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;');
+    var rr = mkEl('div', 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;');
     var rl = mkEl('div', '');
-    rl.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#7c3aed;margin-bottom:4px;', 'Payment Under Review'));
-    rl.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;', 'Ref submitted: ' + t.payRef + ' · Admin cross-referencing'));
-    rr2.appendChild(rl);
-    rr2.appendChild(mkEl('div', 'font-size:20px;font-family:"DM Serif Display",serif;color:#1a1a2e;', t.price));
-    revBox.appendChild(rr2);
-    revBox.appendChild(mkEl('div', 'font-size:12px;color:#7c3aed;', 'Our team will confirm your payment within 1 business day. You will be notified by email.'));
+    rl.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#7c3aed;margin-bottom:4px;', 'Payment Submitted — Pending Verification'));
+    rl.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;', 'Method: ' + (t.payMethod || '—') + ' · Ref: ' + (t.payRef || '—')));
+    rr.appendChild(rl);
+    rr.appendChild(mkEl('div', 'font-size:20px;font-family:"DM Serif Display",serif;color:#1a1a2e;', t.price));
+    revBox.appendChild(rr);
+    if (t.payProofUrl) {
+      var proofLink = document.createElement('a');
+      proofLink.href = t.payProofUrl; proofLink.target = '_blank';
+      proofLink.style.cssText = 'font-size:12px;color:#7c3aed;display:block;margin-bottom:8px;';
+      proofLink.textContent = '📎 View payment proof';
+      revBox.appendChild(proofLink);
+    }
+    revBox.appendChild(mkEl('div', 'font-size:12px;color:#7c3aed;', 'Our team will verify your payment within 1 business day.'));
     wrap.appendChild(revBox);
+
+  /* ── AWAITING PAYMENT — show submission form ── */
   } else if (t.status === 'Completed' || t.payStatus === 'Awaiting Payment') {
     var invBox = mkEl('div', 'background:#fff;border:1px solid #e5e1dd;border-radius:14px;padding:24px;');
-    /* Invoice header */
     var invHead = mkEl('div', 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;');
     var invL = mkEl('div', '');
     invL.appendChild(mkEl('div', 'font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:2px;', 'Invoice — ' + t.ref));
-    invL.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;', 'Completed job · Due within 5 days'));
+    invL.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;', 'Please submit your payment details below'));
     var invR = mkEl('div', 'text-align:right;');
     invR.appendChild(mkEl('div', 'font-size:22px;font-family:"DM Serif Display",serif;color:#1a1a2e;', t.price));
     invR.appendChild(mkPill('Awaiting Payment'));
     invHead.appendChild(invL); invHead.appendChild(invR);
     invBox.appendChild(invHead);
 
-    /* Log payment form */
     var formWrap = mkEl('div', 'background:#f7f8fa;border-radius:10px;padding:18px;border:1px solid #e5e1dd;margin-bottom:16px;');
-    formWrap.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px;', 'Log Your Bank Transfer'));
-    formWrap.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;margin-bottom:14px;line-height:1.5;', 'Make your bank transfer to us, then enter the reference below. Our admin will cross-reference and confirm within 1 business day.'));
+    formWrap.appendChild(mkEl('div', 'font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:4px;', 'Submit Payment Details'));
+    formWrap.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;margin-bottom:16px;line-height:1.5;', 'Complete the form below after making payment. Admin will verify manually and confirm within 1 business day.'));
 
-    var fgrid = mkEl('div', 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;');
-    var refWrap = mkEl('div', '');
-    refWrap.appendChild(mkEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;', 'Bank Transfer Reference'));
-    var refInput = document.createElement('input');
-    refInput.type = 'text'; refInput.id = 'pay-ref-' + t.ref; refInput.placeholder = 'e.g. REF-2024-78241';
-    refInput.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;';
-    refInput.addEventListener('focus', function(){ refInput.style.borderColor='#D4601D'; });
-    refInput.addEventListener('blur',  function(){ refInput.style.borderColor='#e5e1dd'; });
-    refWrap.appendChild(refInput);
-    var amtWrap = mkEl('div', '');
-    amtWrap.appendChild(mkEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;', 'Amount Transferred'));
-    var amtInput = document.createElement('input');
-    amtInput.type = 'text'; amtInput.id = 'pay-amt-' + t.ref; amtInput.placeholder = 'e.g. EUR 220.00';
-    amtInput.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;';
-    amtInput.addEventListener('focus', function(){ amtInput.style.borderColor='#D4601D'; });
-    amtInput.addEventListener('blur',  function(){ amtInput.style.borderColor='#e5e1dd'; });
-    amtWrap.appendChild(amtInput);
-    fgrid.appendChild(refWrap); fgrid.appendChild(amtWrap);
+    /* Payment Method */
+    var mWrap = mkEl('div', 'margin-bottom:12px;');
+    mWrap.appendChild(mkEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;', 'Payment Method'));
+    var methodSel = document.createElement('select');
+    methodSel.id = 'pay-method-' + t.ref;
+    methodSel.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;background:#fff;box-sizing:border-box;';
+    ['Bank Transfer','Revolut','Cash','Cheque','Other'].forEach(function(opt) {
+      var o = document.createElement('option'); o.value = opt; o.textContent = opt; methodSel.appendChild(o);
+    });
+    mWrap.appendChild(methodSel);
+    formWrap.appendChild(mWrap);
+
+    /* Reference + Amount row */
+    var fgrid = mkEl('div', 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;');
+    function mkField(labelTxt, idStr, placeholder) {
+      var w = mkEl('div', '');
+      w.appendChild(mkEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;', labelTxt));
+      var inp = document.createElement('input');
+      inp.type = 'text'; inp.id = idStr; inp.placeholder = placeholder;
+      inp.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;';
+      inp.addEventListener('focus', function(){ inp.style.borderColor='#D4601D'; });
+      inp.addEventListener('blur',  function(){ inp.style.borderColor='#e5e1dd'; });
+      w.appendChild(inp); return w;
+    }
+    fgrid.appendChild(mkField('Payment Reference', 'pay-ref-' + t.ref, 'e.g. REF-20260321'));
+    fgrid.appendChild(mkField('Amount Paid', 'pay-amt-' + t.ref, 'e.g. 350.00'));
     formWrap.appendChild(fgrid);
 
-    var dateWrap = mkEl('div', 'margin-bottom:14px;');
-    dateWrap.appendChild(mkEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;', 'Date of Transfer'));
-    var dateInput = document.createElement('input');
-    dateInput.type = 'text'; dateInput.placeholder = 'e.g. 18 March 2026';
-    dateInput.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;';
-    dateInput.addEventListener('focus', function(){ dateInput.style.borderColor='#D4601D'; });
-    dateInput.addEventListener('blur',  function(){ dateInput.style.borderColor='#e5e1dd'; });
-    dateWrap.appendChild(dateInput);
-    formWrap.appendChild(dateWrap);
+    /* Proof upload */
+    var upWrap = mkEl('div', 'margin-bottom:14px;');
+    upWrap.appendChild(mkEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;', 'Upload Proof (optional)'));
+    var proofInput = document.createElement('input');
+    proofInput.type = 'file'; proofInput.id = 'pay-proof-' + t.ref; proofInput.accept = 'image/*,application/pdf';
+    proofInput.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:8px 12px;font-size:12px;font-family:"DM Sans",sans-serif;background:#fff;box-sizing:border-box;';
+    upWrap.appendChild(proofInput);
+    formWrap.appendChild(upWrap);
 
-    var submitBtn = mkEl('button', 'background:#D4601D;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;width:100%;', 'I have made this payment');
+    var submitBtn = mkEl('button', 'background:#D4601D;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;width:100%;', 'Submit Payment Details');
     submitBtn.addEventListener('mouseover', function(){ submitBtn.style.background='#e87a3a'; });
     submitBtn.addEventListener('mouseout',  function(){ submitBtn.style.background='#D4601D'; });
-    submitBtn.addEventListener('click', function(){ submitPayment(t.ref); });
+    submitBtn.addEventListener('click', function(){ submitPayment(t.ref, submitBtn); });
     formWrap.appendChild(submitBtn);
     invBox.appendChild(formWrap);
+
     if (t.rawPrice) {
       var dlBtn2 = mkEl('button', 'background:#1a1a2e;color:#fff;border:none;border-radius:10px;padding:12px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;display:flex;align-items:center;gap:8px;margin-top:14px;', '↓ Download Invoice (PDF)');
       dlBtn2.id = 'invoice-dl-btn-' + t.ref;
@@ -1702,16 +1724,37 @@ function buildPaymentSection(t) {
   return wrap;
 }
 
-function submitPayment(ref) {
+function submitPayment(ref, btn) {
   var t = portalTickets.find(function(x){ return x.ref===ref; });
-  var refInput = document.getElementById('pay-ref-' + ref);
-  if (!t || !refInput) return;
-  var payRef = refInput.value.trim();
-  if (!payRef) { refInput.style.borderColor='#dc2626'; refInput.placeholder='Please enter your bank reference'; return; }
-  t.payRef = payRef;
-  t.payStatus = 'Under Review';
-  openTicketDetail(ref);
-  renderDashboard();
+  if (!t) return;
+  var refVal    = (document.getElementById('pay-ref-' + ref)    || {}).value || '';
+  var method    = (document.getElementById('pay-method-' + ref) || {}).value || 'Bank Transfer';
+  var proofFile = (document.getElementById('pay-proof-' + ref)  || {}).files;
+  if (!refVal.trim()) {
+    var ri = document.getElementById('pay-ref-' + ref);
+    if (ri) { ri.style.borderColor = '#dc2626'; ri.focus(); }
+    return;
+  }
+  if (btn) { btn.textContent = 'Submitting…'; btn.disabled = true; }
+  function doSubmit(proofUrl) {
+    supaSubmitPayment(ref, method, refVal.trim(), proofUrl).then(function(r) {
+      if (r && r.error) {
+        if (btn) { btn.textContent = 'Submit Payment Details'; btn.disabled = false; }
+        alert('Error saving payment: ' + r.error.message);
+        return;
+      }
+      t.payRef = refVal.trim(); t.payMethod = method;
+      t.payProofUrl = proofUrl || ''; t.payStatus = 'Under Review';
+      t.paymentStatus = 'pending_verification';
+      openTicketDetail(ref);
+      renderDashboard();
+    });
+  }
+  if (proofFile && proofFile[0]) {
+    supaUploadFile(proofFile[0], ref).then(function(url) { doSubmit(url); });
+  } else {
+    doSubmit(null);
+  }
 }
 
 /* ── PAYMENTS TAB ── */
@@ -2643,13 +2686,52 @@ function openAdminTicket(ref) {
   /* Payment */
   var pymtWrap = aEl('div', 'margin-bottom:20px;');
   pymtWrap.appendChild(aEl('label', 'font-size:11px;font-weight:700;color:#4a5264;display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;', 'Payment Status'));
+
+  /* Pending verification alert */
+  if (t.paymentStatus === 'pending_verification') {
+    var alertBox = aEl('div', 'background:#fef9c3;border:1.5px solid #ca8a04;border-radius:10px;padding:14px 16px;margin-bottom:12px;');
+    alertBox.appendChild(aEl('div', 'font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px;', '⚠ Client submitted payment — awaiting your verification'));
+    var details = aEl('div', 'font-size:12px;color:#78350f;line-height:1.8;');
+    details.innerHTML = '<b>Method:</b> ' + (t.payMethod || '—') + ' &nbsp;|&nbsp; <b>Reference:</b> ' + (t.payRef || '—');
+    alertBox.appendChild(details);
+    if (t.payProofUrl) {
+      var pLink = document.createElement('a');
+      pLink.href = t.payProofUrl; pLink.target = '_blank';
+      pLink.style.cssText = 'font-size:12px;color:#92400e;display:block;margin-top:6px;';
+      pLink.textContent = '📎 View payment proof';
+      alertBox.appendChild(pLink);
+    }
+    /* Verify / Reject buttons */
+    var actRow = aEl('div', 'display:flex;gap:10px;margin-top:12px;');
+    var verifyBtn = aEl('button', 'background:#16a34a;color:#fff;border:none;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', '✓ Mark as Paid');
+    verifyBtn.addEventListener('click', function() {
+      verifyBtn.textContent = 'Saving…'; verifyBtn.disabled = true;
+      supaVerifyPayment(ref, true).then(function() {
+        t.paid = true; t.paymentStatus = 'verified'; t.payStatus = 'Paid';
+        openAdminTicket(ref);
+      });
+    });
+    var rejectBtn = aEl('button', 'background:#fff;color:#dc2626;border:1.5px solid #dc2626;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', '✕ Reject Payment');
+    rejectBtn.addEventListener('click', function() {
+      rejectBtn.textContent = 'Rejecting…'; rejectBtn.disabled = true;
+      supaVerifyPayment(ref, false).then(function() {
+        t.paid = false; t.paymentStatus = 'rejected'; t.payStatus = 'Awaiting Payment';
+        openAdminTicket(ref);
+      });
+    });
+    actRow.appendChild(verifyBtn); actRow.appendChild(rejectBtn);
+    alertBox.appendChild(actRow);
+    pymtWrap.appendChild(alertBox);
+  }
+
+  /* Standard paid/unpaid toggle */
   var pymtRow = aEl('div', 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;');
   var unpaidBtn = aEl('button', 'padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;border:1px solid #e5e1dd;background:'+(t.paid?'#f0f1f3':'#fff3ec')+';color:'+(t.paid?'#9199a8':'#D4601D')+';', 'Mark Unpaid');
   unpaidBtn.addEventListener('click', function() { setPaymentStatus(ref, false); });
   var paidBtn = aEl('button', 'padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;border:1px solid #e5e1dd;background:'+(t.paid?'#f0fdf4':'#f0f1f3')+';color:'+(t.paid?'#16a34a':'#9199a8')+';', 'Mark Paid');
   paidBtn.addEventListener('click', function() { setPaymentStatus(ref, true); });
   var pymtStatus = aEl('span', 'font-size:13px;color:#9199a8;', 'Current: ');
-  var bold = aEl('strong', 'color:#1a1a2e;', t.paid ? 'Paid' : 'Unpaid');
+  var bold = aEl('strong', 'color:#1a1a2e;', t.paid ? 'Paid' : (t.paymentStatus === 'pending_verification' ? 'Pending Verification' : 'Unpaid'));
   pymtStatus.appendChild(bold);
   pymtRow.appendChild(unpaidBtn); pymtRow.appendChild(paidBtn); pymtRow.appendChild(pymtStatus);
   pymtWrap.appendChild(pymtRow);
@@ -2680,9 +2762,10 @@ function openAdminTicket(ref) {
       return;
     }
     rows.forEach(function(m) {
-      var isClient = m.sender_role === 'client';
-      var row = aEl('div', 'display:flex;' + (isClient ? 'justify-content:flex-end;' : '') + 'margin-bottom:10px;');
-      var bubble = aEl('div', 'max-width:75%;background:'+(isClient?'#D4601D':'#f0f1f3')+';color:'+(isClient?'#fff':'#1a1a2e')+';border-radius:'+(isClient?'14px 14px 4px 14px':'14px 14px 14px 4px')+';padding:10px 14px;font-size:13px;line-height:1.5;');
+      /* Admin portal: admin = right/orange (self), client = left/grey (incoming) */
+      var isAdmin = m.sender_role === 'admin';
+      var row = aEl('div', 'display:flex;' + (isAdmin ? 'justify-content:flex-end;' : '') + 'margin-bottom:10px;');
+      var bubble = aEl('div', 'max-width:75%;background:'+(isAdmin?'#D4601D':'#f0f1f3')+';color:'+(isAdmin?'#fff':'#1a1a2e')+';border-radius:'+(isAdmin?'14px 14px 4px 14px':'14px 14px 14px 4px')+';padding:10px 14px;font-size:13px;line-height:1.5;');
       if (m.message) bubble.appendChild(aEl('div', 'margin-bottom:4px;', m.message));
       if (m.file_url) {
         if (m.is_image) {
@@ -2694,7 +2777,7 @@ function openAdminTicket(ref) {
         } else {
           var link = document.createElement('a');
           link.href = m.file_url; link.target = '_blank';
-          link.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:'+(isClient?'rgba(255,255,255,0.85)':'#2563eb')+';text-decoration:underline;';
+          link.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:'+(isAdmin?'rgba(255,255,255,0.85)':'#2563eb')+';text-decoration:underline;';
           link.textContent = '📎 ' + (m.file_name || 'Attachment');
           bubble.appendChild(link);
         }
@@ -2702,7 +2785,7 @@ function openAdminTicket(ref) {
         bubble.appendChild(aEl('div', 'font-size:12px;color:#9199a8;', '📎 ' + m.file_name));
       }
       var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-      bubble.appendChild(aEl('div', 'font-size:11px;'+(isClient?'color:rgba(255,255,255,0.6)':'color:#9199a8')+';margin-top:5px;', (m.sender_name||m.sender_role) + (ts ? ' · ' + ts : '')));
+      bubble.appendChild(aEl('div', 'font-size:11px;'+(isAdmin?'color:rgba(255,255,255,0.6)':'color:#9199a8')+';margin-top:5px;', (m.sender_name||m.sender_role) + (ts ? ' · ' + ts : '')));
       row.appendChild(bubble); chatThread.appendChild(row);
     });
     chatThread.scrollTop = chatThread.scrollHeight;

@@ -87,6 +87,28 @@ function supaSetPaid(ref, paid) {
   if (!ref) return Promise.resolve({ error: { message: 'no ref' } });
   return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), { paid: paid });
 }
+function supaSubmitPayment(ref, method, payRef, proofUrl) {
+  if (!ref) return Promise.resolve({ error: { message: 'no ref' } });
+  return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), {
+    payment_status: 'pending_verification',
+    payment_method: method,
+    pay_ref: payRef,
+    payment_proof_url: proofUrl || null,
+    payment_submitted_at: new Date().toISOString()
+  });
+}
+function supaVerifyPayment(ref, approve, price) {
+  if (!ref) return Promise.resolve({ error: { message: 'no ref' } });
+  if (approve) {
+    var payload = { payment_status: 'verified', paid: true };
+    if (price !== undefined) payload.price = price;
+    return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), payload);
+  }
+  return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), {
+    payment_status: 'rejected',
+    paid: false
+  });
+}
 
 /* ── MESSAGES (direct REST — bypasses JS client session issues) ── */
 function _restPost(table, payload) {
@@ -167,7 +189,9 @@ function mapSupaTicketsToAdmin(rows) {
       address:r.address||'', type:r.service_type||'', desc:r.description||'',
       status:r.status||'Pending', priority:r.priority||'Standard',
       contractor:r.contractor_name||'', scheduled:r.scheduled_at||'', price:r.price||'',
-      paid:r.paid||false, created_at:r.created_at||'', updated_at:r.updated_at||'',
+      paid:r.paid||false, payRef:r.pay_ref||'', payMethod:r.payment_method||'',
+      payProofUrl:r.payment_proof_url||'', paymentStatus:r.payment_status||null,
+      created_at:r.created_at||'', updated_at:r.updated_at||'',
       messages:[], contractorMessages:[]};
   });
 }
