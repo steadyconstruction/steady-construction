@@ -882,28 +882,53 @@
   </div>
 
   <!-- ═══════════════════ DASHBOARD VIEW ═══════════════════ -->
-  <div id="pview-dashboard" style="max-width:1000px;margin:0 auto;padding:40px 24px;">
-    <div style="margin-bottom:32px;">
-      <h2 id="dash-greeting" style="font-size:26px;font-family:'DM Serif Display',serif;color:#1a1a2e;margin-bottom:4px;">Good morning</h2>
-      <p style="font-size:14px;color:#9199a8;">You have <span id="dash-active-count" style="color:#1a1a2e;font-weight:600;">0</span> active jobs and <span id="dash-payment-count" style="color:#D4601D;font-weight:600;">0</span> payment due.</p>
+  <div id="pview-dashboard" style="max-width:1100px;margin:0 auto;padding:40px 24px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h2 id="dash-greeting" style="font-size:26px;font-family:'DM Serif Display',serif;color:#1a1a2e;margin-bottom:4px;">Good morning</h2>
+        <p style="font-size:14px;color:#9199a8;">You have <span id="dash-active-count" style="color:#1a1a2e;font-weight:600;">0</span> active jobs and <span id="dash-payment-count" style="color:#D4601D;font-weight:600;">0</span> payment due.</p>
+      </div>
+      <button id="portal-refresh-btn" onclick="refreshPortalData()" style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e5e1dd;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;color:#4a5264;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='#D4601D';this.style.color='#D4601D'" onmouseout="this.style.borderColor='#e5e1dd';this.style.color='#4a5264'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
     </div>
-    <!-- KPI cards -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:36px;">
-      <div style="background:#fff;border-radius:16px;padding:20px 22px;border:1px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Active Jobs</div>
-        <div id="kpi-active" style="font-size:36px;font-family:'DM Serif Display',serif;color:#1a1a2e;line-height:1;">0</div>
+    <!-- KPI row 1 — status breakdown -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px;">
+      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Pending</div>
+        <div id="kpi-pending" style="font-size:34px;font-family:'DM Serif Display',serif;color:#1a1a2e;line-height:1;">0</div>
       </div>
-      <div style="background:#fff;border-radius:16px;padding:20px 22px;border:1px solid #e5e1dd;">
+      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Scheduled</div>
+        <div id="kpi-scheduled" style="font-size:34px;font-family:'DM Serif Display',serif;color:#2563eb;line-height:1;">0</div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">In Progress</div>
+        <div id="kpi-inprogress" style="font-size:34px;font-family:'DM Serif Display',serif;color:#D4601D;line-height:1;">0</div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Completed</div>
-        <div id="kpi-completed-portal" style="font-size:36px;font-family:'DM Serif Display',serif;color:#1a1a2e;line-height:1;">0</div>
+        <div id="kpi-completed-portal" style="font-size:34px;font-family:'DM Serif Display',serif;color:#16a34a;line-height:1;">0</div>
       </div>
-      <div style="background:#fff;border-radius:16px;padding:20px 22px;border:1px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Pending Payment</div>
-        <div id="kpi-payment" style="font-size:36px;font-family:'DM Serif Display',serif;color:#D4601D;line-height:1;">0</div>
+    </div>
+    <!-- KPI row 2 — summary & financial -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px;">
+      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Active Jobs</div>
+        <div id="kpi-active" style="font-size:34px;font-family:'DM Serif Display',serif;color:#1a1a2e;line-height:1;">0</div>
       </div>
-      <div style="background:#fff;border-radius:16px;padding:20px 22px;border:1px solid #e5e1dd;">
+      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Total Tickets</div>
-        <div id="kpi-total-portal" style="font-size:36px;font-family:'DM Serif Display',serif;color:#1a1a2e;line-height:1;">0</div>
+        <div id="kpi-total-portal" style="font-size:34px;font-family:'DM Serif Display',serif;color:#1a1a2e;line-height:1;">0</div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Pending Payment</div>
+        <div id="kpi-payment" style="font-size:34px;font-family:'DM Serif Display',serif;color:#D4601D;line-height:1;">0</div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1.5px solid #e5e1dd;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Outstanding</div>
+        <div id="kpi-outstanding" style="font-size:26px;font-family:'DM Serif Display',serif;color:#D4601D;line-height:1.1;">€ 0</div>
       </div>
     </div>
     <!-- Active jobs -->
@@ -1096,7 +1121,7 @@ function closePortal() {
 }
 function doLogin() {
   var email = document.getElementById('portal-email').value.trim().toLowerCase();
-  var pass = document.getElementById('portal-password').value;
+  var pass  = document.getElementById('portal-password').value;
   var err = document.getElementById('login-error');
   if (!email || !pass) { err.style.display='block'; err.textContent='Please enter your email and password.'; return; }
   err.style.display='block'; err.style.color='#D4601D'; err.textContent='Signing in…';
@@ -1115,6 +1140,7 @@ function doLogin() {
       }
       err.style.display='none';
       window._portalUser = userData;
+      localStorage.setItem('sc_portal_role', 'client');
       supaLoadTickets(userData.id).then(function(rows) {
         if (rows && rows.length) mapSupaTicketsToPortal(rows);
         closePortal();
@@ -1127,13 +1153,59 @@ function doLogin() {
 }
 function logoutPortal() {
   supaSignOut();
+  localStorage.removeItem('sc_portal_role');
   document.getElementById('portal-dashboard').style.display = 'none';
   document.body.style.overflow = '';
 }
 window.addEventListener('load', function() {
   var pw = document.getElementById('portal-password');
   if (pw) pw.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  /* Auto-restore session on page load/refresh */
+  setTimeout(tryRestoreSession, 400);
 });
+
+function tryRestoreSession() {
+  if (!supa) return;
+  var savedRole = localStorage.getItem('sc_portal_role');
+  if (!savedRole) return;
+  supa.auth.getSession().then(function(result) {
+    var session = result && result.data && result.data.session;
+    if (!session) { localStorage.removeItem('sc_portal_role'); return; }
+    var email = session.user && session.user.email;
+    if (!email) { localStorage.removeItem('sc_portal_role'); return; }
+    supaGetRole(email).then(function(userData) {
+      if (!userData) { localStorage.removeItem('sc_portal_role'); return; }
+      if (savedRole === 'admin' && userData.role === 'admin') {
+        window._adminUser = userData;
+        var dash = document.getElementById('admin-dashboard');
+        if (dash) dash.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        initAdminDashboard();
+      } else if (savedRole === 'client' && userData.role !== 'admin') {
+        window._portalUser = userData;
+        supaLoadTickets(userData.id).then(function(rows) {
+          if (rows && rows.length) mapSupaTicketsToPortal(rows);
+          document.getElementById('portal-dashboard').style.display = 'block';
+          document.body.style.overflow = 'hidden';
+          initPortal();
+        });
+      }
+    });
+  });
+}
+
+function refreshPortalData() {
+  var btn = document.getElementById('portal-refresh-btn');
+  if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+  if (!window._portalUser) return;
+  supaLoadTickets(window._portalUser.id).then(function(rows) {
+    if (rows && rows.length) mapSupaTicketsToPortal(rows);
+    renderDashboard();
+    renderTicketList();
+    renderPayments();
+    if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = ''; }
+  });
+}
 
 /* ── NAV ── */
 function showPortalView(view) {
@@ -1166,9 +1238,15 @@ function initPortal() {
 
 /* ── DASHBOARD ── */
 function renderDashboard() {
-  var active     = portalTickets.filter(function(t){ return t.status==='In Progress'||t.status==='Scheduled'||t.status==='Pending'; });
+  var pending    = portalTickets.filter(function(t){ return t.status==='Pending'; });
+  var scheduled  = portalTickets.filter(function(t){ return t.status==='Scheduled'; });
+  var inProgress = portalTickets.filter(function(t){ return t.status==='In Progress'; });
   var completed  = portalTickets.filter(function(t){ return t.status==='Completed'; });
-  var pendingPay = portalTickets.filter(function(t){ return !t.paid && t.status==='Completed'; });
+  var active     = portalTickets.filter(function(t){ return t.status==='In Progress'||t.status==='Scheduled'||t.status==='Pending'; });
+  var pendingPay = portalTickets.filter(function(t){ return !t.paid && (t.paymentStatus !== 'verified'); });
+  var outstanding = pendingPay.reduce(function(sum, t) {
+    return sum + (parseFloat(String(t.rawPrice).replace(/[^0-9.]/g,'')) || 0);
+  }, 0);
 
   /* Greeting with real name */
   var greetEl = document.getElementById('dash-greeting');
@@ -1183,10 +1261,15 @@ function renderDashboard() {
   var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
   set('dash-active-count',   active.length);
   set('dash-payment-count',  pendingPay.length);
+  set('kpi-pending',         pending.length);
+  set('kpi-scheduled',       scheduled.length);
+  set('kpi-inprogress',      inProgress.length);
   set('kpi-active',          active.length);
   set('kpi-completed-portal',completed.length);
   set('kpi-payment',         pendingPay.length);
   set('kpi-total-portal',    portalTickets.length);
+  var outEl = document.getElementById('kpi-outstanding');
+  if (outEl) outEl.textContent = outstanding > 0 ? '\u20AC ' + outstanding.toFixed(2) : '\u20AC 0';
 
   /* Active job cards */
   var ajEl = document.getElementById('dash-active-jobs');
@@ -2415,6 +2498,7 @@ function doAdminLogin() {
         return;
       }
       window._adminUser = userData;
+      localStorage.setItem('sc_portal_role', 'admin');
       closeAdminModal();
       var dash = document.getElementById('admin-dashboard');
       if (dash) dash.style.display = 'block';
@@ -2462,6 +2546,7 @@ function initAdminDashboard() {
 
 function logoutAdmin() {
   supaSignOut();
+  localStorage.removeItem('sc_portal_role');
   if (_adminPollInterval) { clearInterval(_adminPollInterval); _adminPollInterval = null; }
   var dash = document.getElementById('admin-dashboard');
   if (dash) dash.style.display = 'none';
