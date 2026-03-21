@@ -1591,7 +1591,7 @@ function appendMessages(thread, messages) {
           var img = document.createElement('img');
           img.src = URL.createObjectURL(m.fileObj); img.alt = m.text;
           img.style.cssText = 'width:100%;max-width:220px;border-radius:8px;margin-top:6px;display:block;cursor:pointer;';
-          img.onclick = function() { window.open(img.src, '_blank'); };
+          img.onclick = function() { openAttachmentPreview(img.src, m.fileName||m.text, true); };
           bubble.appendChild(img);
         } catch(e) {}
       }
@@ -1621,13 +1621,14 @@ function appendMessagesFromDB(thread, rows) {
         var img = document.createElement('img');
         img.src = m.file_url; img.alt = m.file_name || 'image';
         img.style.cssText = 'max-width:220px;width:100%;border-radius:8px;margin-top:6px;display:block;cursor:pointer;';
-        img.addEventListener('click', function(){ window.open(m.file_url, '_blank'); });
+        (function(url, name){ img.addEventListener('click', function(){ openAttachmentPreview(url, name, true); }); })(m.file_url, m.file_name);
         bubble.appendChild(img);
       } else {
         var link = document.createElement('a');
-        link.href = m.file_url; link.target = '_blank';
-        link.style.cssText = 'display:block;margin-top:6px;font-size:12px;color:' + (isClient ? 'rgba(255,255,255,0.85)' : '#2563eb') + ';text-decoration:underline;';
+        link.href = '#';
+        link.style.cssText = 'display:block;margin-top:6px;font-size:12px;color:' + (isClient ? 'rgba(255,255,255,0.85)' : '#2563eb') + ';text-decoration:underline;cursor:pointer;';
         link.textContent = '📎 ' + (m.file_name || 'Attachment');
+        (function(url, name){ link.addEventListener('click', function(e){ e.preventDefault(); openAttachmentPreview(url, name, false); }); })(m.file_url, m.file_name);
         bubble.appendChild(link);
       }
     }
@@ -2872,13 +2873,14 @@ function openAdminTicket(ref) {
           var img = document.createElement('img');
           img.src = m.file_url; img.alt = m.file_name || 'attachment';
           img.style.cssText = 'max-width:220px;width:100%;border-radius:8px;margin-top:4px;display:block;cursor:pointer;';
-          img.onclick = function() { window.open(m.file_url, '_blank'); };
+          (function(url,name){ img.onclick = function(){ openAttachmentPreview(url,name,true); }; })(m.file_url,m.file_name);
           bubble.appendChild(img);
         } else {
           var link = document.createElement('a');
-          link.href = m.file_url; link.target = '_blank';
-          link.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:'+(isAdmin?'rgba(255,255,255,0.85)':'#2563eb')+';text-decoration:underline;';
+          link.href = '#';
+          link.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:'+(isAdmin?'rgba(255,255,255,0.85)':'#2563eb')+';text-decoration:underline;cursor:pointer;';
           link.textContent = '📎 ' + (m.file_name || 'Attachment');
+          (function(url,name){ link.addEventListener('click',function(e){ e.preventDefault(); openAttachmentPreview(url,name,false); }); })(m.file_url,m.file_name);
           bubble.appendChild(link);
         }
       } else if (m.file_name && !m.message) {
@@ -2984,13 +2986,14 @@ function openAdminTicket(ref) {
           if (m.is_image) {
             var img = document.createElement('img');
             img.src = m.file_url; img.style.cssText = 'max-width:200px;width:100%;border-radius:8px;margin-top:4px;display:block;cursor:pointer;';
-            img.onclick = function() { window.open(m.file_url, '_blank'); };
+            (function(url,name){ img.onclick = function(){ openAttachmentPreview(url,name,true); }; })(m.file_url,m.file_name);
             mBubble.appendChild(img);
           } else {
             var lnk = document.createElement('a');
-            lnk.href = m.file_url; lnk.target = '_blank';
-            lnk.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:' + (isAdmin ? 'rgba(255,255,255,0.8)' : '#2563eb') + ';text-decoration:underline;';
+            lnk.href = '#';
+            lnk.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:' + (isAdmin ? 'rgba(255,255,255,0.8)' : '#2563eb') + ';text-decoration:underline;cursor:pointer;';
             lnk.textContent = '📎 ' + (m.file_name || 'Attachment');
+            (function(url,name){ lnk.addEventListener('click',function(e){ e.preventDefault(); openAttachmentPreview(url,name,false); }); })(m.file_url,m.file_name);
             mBubble.appendChild(lnk);
           }
         }
@@ -3106,7 +3109,7 @@ function handleContractorFiles(files, ref, thread) {
         var img = document.createElement('img');
         img.src = e.target.result;
         img.style.cssText = 'width:100%;max-width:200px;border-radius:8px;display:block;cursor:pointer;';
-        img.onclick = function(){ window.open(e.target.result, '_blank'); };
+        (function(src,name){ img.onclick = function(){ openAttachmentPreview(src,name,true); }; })(e.target.result, file.name);
         var imgLabel = document.createElement('div');
         imgLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.5);margin-top:5px;';
         imgLabel.textContent = file.name + ' · ' + ts;
@@ -3229,7 +3232,7 @@ function handleClientFiles(files, ref, thread) {
         var img = document.createElement('img');
         img.src = e.target.result;
         img.style.cssText = 'max-width:200px;width:100%;border-radius:8px;display:block;cursor:pointer;';
-        img.onclick = function(){ window.open(e.target.result,'_blank'); };
+        (function(src,name){ img.onclick = function(){ openAttachmentPreview(src,name,true); }; })(e.target.result, file.name);
         bubble.appendChild(img);
         bubble.appendChild(aEl('div','font-size:11px;color:#9199a8;margin-top:5px;','Admin · Just now'));
         if (thread) thread.scrollTop = thread.scrollHeight;
@@ -3797,6 +3800,94 @@ function buildInvoicePDF(t, logoDataUrl) {
   doc.text('Steady Construction, a trading name of JMAFG Limited. 20 Harcourt Street, Dublin 2, D02 H364.', W / 2, H - 8, { align: 'center' });
 
   doc.save('Invoice-' + invNum + '.pdf');
+}
+
+/* ══════════════════════════════════════════════
+   ATTACHMENT LIGHTBOX
+   ══════════════════════════════════════════════ */
+function openAttachmentPreview(url, fileName, isImage) {
+  var modal = document.getElementById('attachment-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'attachment-modal';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;flex-direction:column;';
+    modal.addEventListener('click', function(e){ if (e.target === modal) closeAttachmentModal(); });
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = '';
+  modal.style.display = 'flex';
+
+  /* Top bar */
+  var bar = document.createElement('div');
+  bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:min(90vw,900px);padding:10px 4px;';
+  var nameEl = document.createElement('span');
+  nameEl.style.cssText = 'color:rgba(255,255,255,0.75);font-size:13px;font-family:"DM Sans",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;';
+  nameEl.textContent = fileName || (isImage ? 'Image' : 'Attachment');
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;flex-shrink:0;';
+
+  var dlBtn = document.createElement('button');
+  dlBtn.textContent = '↓ Download';
+  dlBtn.style.cssText = 'background:#D4601D;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;';
+  dlBtn.addEventListener('click', function() { downloadAttachment(url, fileName); });
+
+  var closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕ Close';
+  closeBtn.style.cssText = 'background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:"DM Sans",sans-serif;';
+  closeBtn.addEventListener('click', closeAttachmentModal);
+
+  btnRow.appendChild(dlBtn); btnRow.appendChild(closeBtn);
+  bar.appendChild(nameEl); bar.appendChild(btnRow);
+  modal.appendChild(bar);
+
+  /* Content */
+  var content = document.createElement('div');
+  content.style.cssText = 'width:min(90vw,900px);max-height:80vh;overflow:auto;background:#1a1a2e;border-radius:12px;display:flex;align-items:center;justify-content:center;';
+
+  var ext = (fileName || url).split('.').pop().toLowerCase();
+  var isPdf = ext === 'pdf';
+
+  if (isImage) {
+    var img = document.createElement('img');
+    img.src = url; img.alt = fileName || 'image';
+    img.style.cssText = 'max-width:100%;max-height:80vh;border-radius:12px;display:block;';
+    content.appendChild(img);
+  } else if (isPdf) {
+    var iframe = document.createElement('iframe');
+    iframe.src = url; iframe.style.cssText = 'width:100%;height:75vh;border:none;border-radius:12px;';
+    content.appendChild(iframe);
+  } else {
+    content.style.padding = '40px';
+    var icon = document.createElement('div');
+    icon.style.cssText = 'text-align:center;color:#fff;font-family:"DM Sans",sans-serif;';
+    icon.innerHTML = '<div style="font-size:48px;margin-bottom:16px;">📎</div><div style="font-size:16px;font-weight:600;margin-bottom:8px;">' + (fileName || 'Attachment') + '</div><div style="font-size:13px;color:rgba(255,255,255,0.6);">Click Download to save this file.</div>';
+    content.appendChild(icon);
+  }
+  modal.appendChild(content);
+
+  document.addEventListener('keydown', _modalEscHandler);
+}
+
+function _modalEscHandler(e) { if (e.key === 'Escape') closeAttachmentModal(); }
+
+function closeAttachmentModal() {
+  var modal = document.getElementById('attachment-modal');
+  if (modal) modal.style.display = 'none';
+  document.removeEventListener('keydown', _modalEscHandler);
+}
+
+function downloadAttachment(url, fileName) {
+  fetch(url).then(function(r){ return r.blob(); }).then(function(b){
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = fileName || 'attachment';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 1000);
+  }).catch(function(){
+    /* Fallback if fetch blocked */
+    var a = document.createElement('a'); a.href = url; a.download = fileName || 'attachment';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  });
 }
 </script>
 
