@@ -3528,8 +3528,7 @@ window.postContractorMsg = postContractorMsg;
    ══════════════════════════════════════════════ */
 
 function getInvoiceNumber(ref) {
-  var m = ref.match(/(\d+)$/);
-  return 'INV-' + (m ? 1000 + parseInt(m[1]) : ref.replace(/\D/g,''));
+  return ref; // invoice number matches ticket reference directly
 }
 
 function downloadInvoice(t) {
@@ -3605,8 +3604,8 @@ function buildInvoicePDF(t, logoDataUrl) {
   /* Left: company details */
   setC(mid); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
   doc.text('20 Harcourt Street, Dublin 2, D02 H364', M, y + 27);
-  doc.text('info@steadyconstruction.ie  |  steadyconstruction.ie', M, y + 32);
-  doc.text('VAT No. IE 9876543W', M, y + 37);
+  doc.text('info@steadyconstruction.ie  |  www.steadyconstruction.ie', M, y + 32);
+  doc.text('VAT No. IE1158988IA', M, y + 37);
 
   /* Right: "Invoice" in serif */
   var invNum = getInvoiceNumber(t.ref);
@@ -3635,7 +3634,7 @@ function buildInvoicePDF(t, logoDataUrl) {
   y += 1; // y = 50
 
   /* -- Billing section (paper2 bg) -- */
-  setF(paper2); doc.rect(0, y, W, 32, 'F');
+  setF(paper2); doc.rect(0, y, W, 46, 'F');
   y += 2; // y = 52
 
   /* Status badge (top-right) */
@@ -3673,7 +3672,7 @@ function buildInvoicePDF(t, logoDataUrl) {
   setC(slate); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
   doc.text(t.ref, billingCol2, y + 14);
 
-  y += 34; // y = 86
+  y += 48; // y = 100
 
   /* -- Full-width rule -- */
   setD(rule); doc.setLineWidth(0.3); doc.line(0, y, W, y);
