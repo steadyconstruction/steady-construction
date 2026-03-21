@@ -222,7 +222,12 @@ function mapSupaContractorsToAdmin(rows) {
 function supaLoadSubcTickets(subcId) {
   initSupabase();
   if (!supa) return Promise.resolve([]);
-  return supa.from('tickets').select('*').eq('subc_id', subcId).order('created_at',{ascending:false}).then(function(r){ return r.data||[]; });
+  /* Only return fields the subcontractor needs — no price, client identity, or payment data */
+  return supa.from('tickets')
+    .select('id,ref,address,service_type,description,status,scheduled_at,contractor_name,subc_id,created_at')
+    .eq('subc_id', subcId)
+    .order('created_at',{ascending:false})
+    .then(function(r){ return r.data||[]; });
 }
 function supaLoadSubcUsers() {
   initSupabase();

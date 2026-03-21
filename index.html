@@ -3580,15 +3580,18 @@ function renderContractorCards() {
     card.appendChild(aEl('div', 'font-size:13px;color:#9199a8;margin-bottom:2px;', c.phone));
     card.appendChild(aEl('div', 'font-size:13px;color:#9199a8;margin-bottom:12px;', c.email));
     card.appendChild(aEl('div', 'font-size:12px;color:#9199a8;margin-bottom:14px;', c.jobs + ' jobs completed'));
-    /* SUBC Login button */
-    var subcBtn = aEl('button', 'background:#f5f3ff;color:#7c3aed;border:1px solid #c4b5fd;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;width:100%;', '+ Create SUBC Login');
+    /* Action buttons */
+    var btnRow = aEl('div', 'display:flex;gap:8px;margin-top:4px;');
+    var editBtn = aEl('button', 'flex:1;background:#f0f1f3;color:#1a1a2e;border:none;border-radius:8px;padding:7px 0;font-size:12px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', '✏ Edit');
     (function(contractor) {
-      subcBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        openCreateSubcLogin(contractor);
-      });
+      editBtn.addEventListener('click', function(e) { e.stopPropagation(); openEditContractorPanel(contractor); });
     })(c);
-    card.appendChild(subcBtn);
+    var subcBtn = aEl('button', 'flex:1;background:#f5f3ff;color:#7c3aed;border:1px solid #c4b5fd;border-radius:8px;padding:7px 0;font-size:12px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', '+ SUBC Login');
+    (function(contractor) {
+      subcBtn.addEventListener('click', function(e) { e.stopPropagation(); openCreateSubcLogin(contractor); });
+    })(c);
+    btnRow.appendChild(editBtn); btnRow.appendChild(subcBtn);
+    card.appendChild(btnRow);
     container.appendChild(card);
   });
 }
@@ -3616,6 +3619,127 @@ function addContractor() {
     ['ncon-name','ncon-phone','ncon-email'].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ''; });
     setTimeout(function() { var m = document.getElementById('contractor-added-msg'); if (m) m.style.display = 'none'; }, 3000);
   });
+}
+
+function openEditContractorPanel(c) {
+  var existing = document.getElementById('edit-contractor-modal');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'edit-contractor-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;';
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:32px;width:100%;max-width:460px;margin:20px;box-shadow:0 20px 60px rgba(0,0,0,0.25);max-height:90vh;overflow-y:auto;';
+
+  box.appendChild(aEl('div', 'font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:4px;', 'Edit Contractor'));
+  box.appendChild(aEl('div', 'font-size:13px;color:#9199a8;margin-bottom:20px;', 'Update details for ' + c.name));
+
+  var errEl = aEl('div', 'display:none;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;', '');
+  box.appendChild(errEl);
+
+  function field(lbl, val, id, type) {
+    var w = aEl('div', 'margin-bottom:12px;');
+    w.appendChild(aEl('label', 'font-size:12px;font-weight:600;color:#4a5264;display:block;margin-bottom:5px;', lbl));
+    var inp = document.createElement('input'); inp.type = type||'text'; inp.id = id; inp.value = val||'';
+    inp.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:14px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;';
+    inp.addEventListener('focus', function(){ inp.style.borderColor='#D4601D'; });
+    inp.addEventListener('blur',  function(){ inp.style.borderColor='#e5e1dd'; });
+    w.appendChild(inp); box.appendChild(w); return inp;
+  }
+
+  var nameInp  = field('Full Name',  c.name,  'ec-name');
+  var emailInp = field('Email',      c.email, 'ec-email', 'email');
+  var phoneInp = field('Phone',      c.phone, 'ec-phone');
+
+  /* Trade select */
+  var tw = aEl('div', 'margin-bottom:12px;');
+  tw.appendChild(aEl('label', 'font-size:12px;font-weight:600;color:#4a5264;display:block;margin-bottom:5px;', 'Trade'));
+  var tradeSel = document.createElement('select');
+  tradeSel.id = 'ec-trade';
+  tradeSel.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:14px;font-family:"DM Sans",sans-serif;outline:none;background:#fff;box-sizing:border-box;';
+  ['Plumber','Electrician','Carpenter','Roofer','Painter','Cleaner','General'].forEach(function(t){ var o=document.createElement('option');o.value=t;o.textContent=t;if(t===c.trade)o.selected=true;tradeSel.appendChild(o); });
+  tw.appendChild(tradeSel); box.appendChild(tw);
+
+  /* Active toggle */
+  var activeW = aEl('div', 'display:flex;align-items:center;justify-content:space-between;background:#f7f8fa;border-radius:10px;padding:12px 14px;margin-bottom:16px;');
+  activeW.appendChild(aEl('span', 'font-size:13px;font-weight:600;color:#1a1a2e;', 'Account Status'));
+  var activeToggle = document.createElement('select');
+  activeToggle.id = 'ec-active';
+  activeToggle.style.cssText = 'border:1px solid #e5e1dd;border-radius:8px;padding:6px 10px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;background:#fff;';
+  ['Active','Inactive'].forEach(function(s){ var o=document.createElement('option');o.value=s;o.textContent=s;if((c.active&&s==='Active')||(!c.active&&s==='Inactive'))o.selected=true;activeToggle.appendChild(o); });
+  activeW.appendChild(activeToggle); box.appendChild(activeW);
+
+  /* Password reset section */
+  var pwSection = aEl('div', 'background:#f7f8fa;border-radius:10px;padding:14px;margin-bottom:20px;');
+  pwSection.appendChild(aEl('div', 'font-size:12px;font-weight:600;color:#4a5264;margin-bottom:10px;', 'Reset Password (leave blank to keep current)'));
+  var newPassInp = document.createElement('input'); newPassInp.type='password'; newPassInp.id='ec-newpass'; newPassInp.placeholder='New password (min 6 chars)';
+  newPassInp.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:8px;padding:10px 12px;font-size:14px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;';
+  pwSection.appendChild(newPassInp); box.appendChild(pwSection);
+
+  /* Buttons */
+  var btnRow = aEl('div', 'display:flex;gap:10px;');
+  var saveBtn = aEl('button', 'background:#D4601D;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Save Changes');
+  var cancelBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Cancel');
+  cancelBtn.addEventListener('click', function(){ overlay.remove(); });
+
+  saveBtn.addEventListener('click', function() {
+    var name  = nameInp.value.trim();
+    var email = emailInp.value.trim().toLowerCase();
+    var phone = phoneInp.value.trim();
+    var trade = tradeSel.value;
+    var active = activeToggle.value === 'Active';
+    var newPass = newPassInp.value;
+    if (!name || !email) { errEl.style.display='block'; errEl.textContent='Name and email are required.'; return; }
+    saveBtn.disabled=true; saveBtn.textContent='Saving…'; errEl.style.display='none';
+
+    var updates = { full_name: name, email: email, phone: phone||'', trade: trade, is_active: active };
+    var key = _k1+_k2+_k3;
+
+    /* Update contractors table */
+    fetch(SUPA_URL + '/rest/v1/contractors?id=eq.' + encodeURIComponent(c._id), {
+      method: 'PATCH',
+      headers: { 'apikey':key, 'Authorization':'Bearer '+key, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+      body: JSON.stringify(updates)
+    }).then(function(res) {
+      if (!res.ok) return res.text().then(function(t){ throw new Error(t); });
+
+      /* Reset password if provided */
+      var passwordChain = Promise.resolve();
+      if (newPass && newPass.length >= 6) {
+        var _sr = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJscHVuZ2NwdW93dmd0YmduY3VxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkzOTIzOCwiZXhwIjoyMDg5NTE1MjM4fQ._O2g3JzeHSBJ8m-LV7rqWeQKXVrDDUJuwhxxBmRfL5c';
+        /* Find auth user id by email, then update password */
+        passwordChain = fetch(SUPA_URL + '/auth/v1/admin/users?email=' + encodeURIComponent(email), {
+          headers: { 'apikey':_sr, 'Authorization':'Bearer '+_sr }
+        }).then(function(r){ return r.json(); }).then(function(data) {
+          var users = data.users || [];
+          if (!users.length) return;
+          var uid = users[0].id;
+          return fetch(SUPA_URL + '/auth/v1/admin/users/' + uid, {
+            method: 'PUT',
+            headers: { 'apikey':_sr, 'Authorization':'Bearer '+_sr, 'Content-Type':'application/json' },
+            body: JSON.stringify({ password: newPass })
+          });
+        });
+      }
+      return passwordChain;
+    }).then(function() {
+      overlay.remove();
+      supaLoadContractors().then(function(rows){ mapSupaContractorsToAdmin(rows||[]); renderContractorCards(); });
+      var toast = aEl('div','position:fixed;bottom:24px;right:24px;z-index:3000;background:#16a34a;color:#fff;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:600;font-family:"DM Sans",sans-serif;', '✓ Contractor updated');
+      document.body.appendChild(toast); setTimeout(function(){ toast.remove(); }, 3000);
+    }).catch(function(err) {
+      saveBtn.disabled=false; saveBtn.textContent='Save Changes';
+      errEl.style.display='block'; errEl.textContent='Error: ' + (err.message||err);
+    });
+  });
+
+  btnRow.appendChild(saveBtn); btnRow.appendChild(cancelBtn);
+  box.appendChild(btnRow);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  setTimeout(function(){ nameInp.focus(); }, 50);
 }
 
 /* ── PAYMENTS ── */
@@ -3800,6 +3924,7 @@ window.renderAdminOverview = renderAdminOverview;
 window.refreshAdminData = refreshAdminData;
 window.postContractorMsg = postContractorMsg;
 window.openCreateSubcLogin = openCreateSubcLogin;
+window.openEditContractorPanel = openEditContractorPanel;
 
 /* ══════════════════════════════════════════════
    INVOICE DOWNLOAD SYSTEM
@@ -4388,7 +4513,7 @@ function openSubcTicket(ref) {
   header.appendChild(topRow);
 
   var grid = document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;';
-  [['Service Type',t.type],['Scheduled',t.scheduled||'To be confirmed'],['Estimate',t.price||'Pending'],['Client',t.client]].forEach(function(pair) {
+  [['Service Type',t.type],['Scheduled',t.scheduled||'To be confirmed']].forEach(function(pair) {
     var item = document.createElement('div'); item.style.cssText='background:#f7f8fa;border-radius:9px;padding:12px 14px;';
     var lbl = document.createElement('div'); lbl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#9199a8;margin-bottom:4px;'; lbl.textContent=pair[0];
     var val = document.createElement('div'); val.style.cssText='font-size:13px;font-weight:600;color:#1a1a2e;'; val.textContent=pair[1];
