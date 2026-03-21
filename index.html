@@ -2366,10 +2366,11 @@ window.submitNewRequest = submitNewRequest;
     <div id="new-client-form" style="display:none;background:#fff;border-radius:14px;padding:24px;border:1px solid var(--gray-200);margin-bottom:20px;">
       <h4 style="font-size:16px;color:var(--navy);margin-bottom:16px;">Create New Client Account</h4>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-        <div><label style="font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px;">Full Name</label><input type="text" id="nc-name" placeholder="e.g. Sarah Kelly" style="width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;"></div>
-        <div><label style="font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px;">Email Address</label><input type="email" id="nc-email" placeholder="sarah@example.ie" style="width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;"></div>
-        <div><label style="font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px;">Phone</label><input type="text" id="nc-phone" placeholder="+353 87 000 0000" style="width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;"></div>
-        <div><label style="font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px;">Company (optional)</label><input type="text" id="nc-company" placeholder="e.g. Kelly Properties" style="width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;"></div>
+        <div><label style="font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px;">Full Name *</label><input type="text" id="nc-name" placeholder="e.g. Sarah Kelly" style="width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;"></div>
+        <div><label style="font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px;">Email Address *</label><input type="email" id="nc-email" placeholder="sarah@example.ie" style="width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;"></div>
+        <div><label style="font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px;">Phone *</label><input type="text" id="nc-phone" placeholder="+353 87 000 0000" style="width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;"></div>
+        <div><label style="font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px;">Company (optional)</label><input type="text" id="nc-company" placeholder="e.g. Kelly Properties" style="width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;"></div>
+        <div style="grid-column:1/-1;"><label style="font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px;">Address *</label><input type="text" id="nc-address" placeholder="e.g. 14 Maple Street, Dublin 6, D06 XY12" style="width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;"></div>
       </div>
       <div style="background:var(--off);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--gray-600);margin-bottom:14px;">📧 An account activation email will be sent to the client automatically. They will set their own password on first login.</div>
       <div style="display:flex;gap:10px;">
@@ -3275,27 +3276,88 @@ function renderAdminClients() {
     row.appendChild(aEl('div', 'text-align:center;font-size:14px;font-weight:700;color:#16a34a;', String(closedCount)));
     row.appendChild(aPill(c.active ? 'Active' : 'Inactive'));
     var btns = aEl('div', 'display:flex;gap:6px;');
+    var editBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Edit');
+    (function(client, rowEl) {
+      editBtn.addEventListener('click', function() { openEditClientPanel(client, rowEl); });
+    })(c, row);
     var toggleBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;', c.active ? 'Disable' : 'Enable');
     toggleBtn.addEventListener('click', function() { toggleClient(i); });
-    var resetBtn = aEl('button', 'background:#fff;color:#1a1a2e;border:1px solid #e5e1dd;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Reset PW');
-    resetBtn.addEventListener('click', function() { sendReset(i); });
-    btns.appendChild(toggleBtn); btns.appendChild(resetBtn);
+    btns.appendChild(editBtn); btns.appendChild(toggleBtn);
     row.appendChild(btns);
     container.appendChild(row);
   });
 }
 
+function openEditClientPanel(c, afterRow) {
+  var existing = document.getElementById('edit-client-panel-' + c._id);
+  if (existing) { existing.remove(); return; }
+  var panel = aEl('div', 'padding:16px 20px;background:#f7f8fa;border-bottom:1px solid #e5e1dd;');
+  panel.id = 'edit-client-panel-' + c._id;
+  var grid = aEl('div', 'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;');
+  function mkInput(label, val, id) {
+    var w = aEl('div', '');
+    w.appendChild(aEl('label', 'font-size:11px;font-weight:600;color:#4a5264;display:block;margin-bottom:4px;', label));
+    var inp = document.createElement('input');
+    inp.type = 'text'; inp.value = val || ''; inp.id = id;
+    inp.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:7px;padding:8px 10px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;background:#fff;';
+    inp.addEventListener('focus', function(){ inp.style.borderColor='#D4601D'; });
+    inp.addEventListener('blur',  function(){ inp.style.borderColor='#e5e1dd'; });
+    w.appendChild(inp); return w;
+  }
+  var pid = c._id;
+  grid.appendChild(mkInput('Full Name', c.name,    'ec-name-'+pid));
+  grid.appendChild(mkInput('Phone',     c.phone,   'ec-phone-'+pid));
+  grid.appendChild(mkInput('Company',   c.company, 'ec-company-'+pid));
+  var addrW = aEl('div', 'grid-column:1/-1;');
+  addrW.appendChild(aEl('label', 'font-size:11px;font-weight:600;color:#4a5264;display:block;margin-bottom:4px;', 'Address'));
+  var addrInp = document.createElement('input');
+  addrInp.type = 'text'; addrInp.value = c.address || ''; addrInp.id = 'ec-address-'+pid;
+  addrInp.style.cssText = 'width:100%;border:1px solid #e5e1dd;border-radius:7px;padding:8px 10px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box;background:#fff;';
+  addrInp.addEventListener('focus', function(){ addrInp.style.borderColor='#D4601D'; });
+  addrInp.addEventListener('blur',  function(){ addrInp.style.borderColor='#e5e1dd'; });
+  addrW.appendChild(addrInp);
+  grid.appendChild(addrW);
+  panel.appendChild(grid);
+  var foot = aEl('div', 'display:flex;gap:8px;align-items:center;');
+  var saveBtn = aEl('button', 'background:#D4601D;color:#fff;border:none;padding:7px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Save');
+  var cancelBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:7px 14px;border-radius:7px;font-size:13px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Cancel');
+  var statusMsg = aEl('span', 'font-size:12px;color:#9199a8;', '');
+  saveBtn.addEventListener('click', function() {
+    var updates = {
+      full_name: (document.getElementById('ec-name-'+pid)||{}).value || c.name,
+      phone:     (document.getElementById('ec-phone-'+pid)||{}).value || '',
+      company:   (document.getElementById('ec-company-'+pid)||{}).value || null,
+      address:   (document.getElementById('ec-address-'+pid)||{}).value || null
+    };
+    saveBtn.textContent = 'Saving…'; saveBtn.disabled = true;
+    supaUpdateClient(pid, updates).then(function(r) {
+      if (r && r.error) { statusMsg.style.color='#dc2626'; statusMsg.textContent = 'Error: ' + r.error.message; saveBtn.textContent='Save'; saveBtn.disabled=false; return; }
+      c.name = updates.full_name; c.phone = updates.phone; c.company = updates.company||''; c.address = updates.address||'';
+      supaLoadClients().then(function(rows) { mapSupaClientsToAdmin(rows||[]); renderAdminClients(); });
+      panel.remove();
+    });
+  });
+  cancelBtn.addEventListener('click', function() { panel.remove(); });
+  foot.appendChild(saveBtn); foot.appendChild(cancelBtn); foot.appendChild(statusMsg);
+  panel.appendChild(foot);
+  afterRow.insertAdjacentElement('afterend', panel);
+}
+
 function openNewClientForm() { var f = document.getElementById('new-client-form'); if (f) f.style.display = 'block'; }
 
 function createClient() {
-  var name  = ((document.getElementById('nc-name')  || {}).value || '').trim();
-  var email = ((document.getElementById('nc-email') || {}).value || '').trim();
-  var phone = ((document.getElementById('nc-phone') || {}).value || '').trim();
+  var name    = ((document.getElementById('nc-name')    || {}).value || '').trim();
+  var email   = ((document.getElementById('nc-email')   || {}).value || '').trim();
+  var phone   = ((document.getElementById('nc-phone')   || {}).value || '').trim();
   var company = ((document.getElementById('nc-company') || {}).value || '').trim();
-  if (!name || !email) return;
+  var address = ((document.getElementById('nc-address') || {}).value || '').trim();
   var msg = document.getElementById('client-created-msg');
+  if (!name || !email || !phone || !address) {
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#dc2626'; msg.textContent = 'Please fill in all required fields (Name, Email, Phone, Address).'; }
+    return;
+  }
   if (msg) { msg.style.display = 'block'; msg.style.color = '#D4601D'; msg.textContent = 'Creating account…'; }
-  supaCreateClient(email, name, phone, company).then(function(result) {
+  supaCreateClient(email, name, phone, company, address).then(function(result) {
     if (result.error) {
       if (msg) { msg.style.display = 'block'; msg.style.color = '#dc2626'; msg.textContent = 'Error: ' + result.error.message; }
       return;
@@ -3305,7 +3367,7 @@ function createClient() {
       renderAdminClients();
     });
     if (msg) { msg.style.display = 'block'; msg.style.color = '#16a34a'; msg.textContent = 'Account created for ' + name + '.'; }
-    ['nc-name','nc-email','nc-phone','nc-company'].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ''; });
+    ['nc-name','nc-email','nc-phone','nc-company','nc-address'].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ''; });
     setTimeout(function() { var m = document.getElementById('client-created-msg'); if (m) m.style.display = 'none'; }, 4000);
   });
 }
@@ -3589,14 +3651,20 @@ function buildInvoicePDF(t, logoDataUrl) {
   /* Bill To */
   setC(mid); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
   doc.text('BILL TO', M + 4, y + 7);
-  var clientName    = (window._portalUser && window._portalUser.full_name) || 'Client';
-  var clientEmail   = (window._portalUser && window._portalUser.email)     || '';
-  var clientCompany = (window._portalUser && window._portalUser.company)   || '';
+  var cu = window._portalUser || {};
+  var clientName    = cu.full_name || 'Client';
+  var clientCompany = cu.company   || '';
+  var clientAddress = cu.address   || '';
+  var clientEmail   = cu.email     || '';
+  var clientPhone   = cu.phone     || '';
   setC(slate); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
   doc.text(clientName, M + 4, y + 14);
   setC(mid); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-  if (clientEmail)   doc.text(clientEmail,   M + 4, y + 20);
-  if (clientCompany) doc.text(clientCompany, M + 4, y + 26);
+  var billY = y + 20;
+  if (clientCompany) { doc.text(clientCompany, M + 4, billY); billY += 5; }
+  if (clientAddress) { doc.text(clientAddress, M + 4, billY); billY += 5; }
+  if (clientEmail)   { doc.text(clientEmail,   M + 4, billY); billY += 5; }
+  if (clientPhone)   { doc.text(clientPhone,   M + 4, billY); }
 
   /* Ticket Reference */
   var billingCol2 = M + CW / 2;

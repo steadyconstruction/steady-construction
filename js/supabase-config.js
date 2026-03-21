@@ -23,7 +23,7 @@ function supaSignOut() { if (supa) supa.auth.signOut(); }
 function supaGetRole(email) {
   initSupabase();
   if (!supa) return Promise.resolve(null);
-  return supa.from('users').select('role,full_name,id').eq('email', email).single().then(function(r){ return r.data; });
+  return supa.from('users').select('role,full_name,id,email,phone,company,address').eq('email', email).single().then(function(r){ return r.data; });
 }
 function supaLoadTickets(clientId) {
   initSupabase();
@@ -37,9 +37,20 @@ function supaLoadClients() {
   if (!supa) return Promise.resolve([]);
   return supa.from('users').select('*').eq('role','client').then(function(r){ return r.data||[]; });
 }
-function supaCreateClient(email, fullName, phone, company) {
+function supaCreateClient(email, fullName, phone, company, address) {
   initSupabase();
-  return supa.from('users').insert([{email:email,full_name:fullName,phone:phone,company:company,role:'client'}]).select().single();
+  return supa.from('users').insert([{email:email,full_name:fullName,phone:phone,company:company,address:address||null,role:'client'}]).select().single();
+}
+function supaUpdateClient(id, updates) {
+  var key = _k1 + _k2 + _k3;
+  return fetch(SUPA_URL + '/rest/v1/users?id=eq.' + encodeURIComponent(id), {
+    method: 'PATCH',
+    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify(updates)
+  }).then(function(res) {
+    if (!res.ok) return res.text().then(function(t){ return { error: { message: t } }; });
+    return { error: null };
+  });
 }
 function supaLoadContractors() {
   initSupabase();
@@ -197,7 +208,7 @@ function mapSupaTicketsToAdmin(rows) {
 }
 function mapSupaClientsToAdmin(rows) {
   adminClients = rows.map(function(r){
-    return {_id:r.id,name:r.full_name,email:r.email,phone:r.phone||'',company:r.company||'',props:0,tickets:0,active:r.is_active};
+    return {_id:r.id,name:r.full_name,email:r.email,phone:r.phone||'',company:r.company||'',address:r.address||'',props:0,tickets:0,active:r.is_active};
   });
 }
 function mapSupaContractorsToAdmin(rows) {
