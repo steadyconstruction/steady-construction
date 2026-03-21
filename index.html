@@ -882,61 +882,85 @@
   </div>
 
   <!-- ═══════════════════ DASHBOARD VIEW ═══════════════════ -->
-  <div id="pview-dashboard" style="max-width:1100px;margin:0 auto;padding:40px 24px;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+  <div id="pview-dashboard" style="max-width:1400px;margin:0 auto;padding:28px 24px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
       <div>
-        <h2 id="dash-greeting" style="font-size:26px;font-family:'DM Serif Display',serif;color:#1a1a2e;margin-bottom:4px;">Good morning</h2>
-        <p style="font-size:14px;color:#9199a8;">You have <span id="dash-active-count" style="color:#1a1a2e;font-weight:600;">0</span> active jobs and <span id="dash-payment-count" style="color:#D4601D;font-weight:600;">0</span> payment due.</p>
+        <h2 id="dash-greeting" style="font-size:22px;font-family:'DM Serif Display',serif;color:#1a1a2e;margin-bottom:4px;">Good morning</h2>
+        <p style="font-size:14px;color:#9199a8;">Live view of your tickets by status — click any card to open</p>
       </div>
       <button id="portal-refresh-btn" onclick="refreshPortalData()" style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e5e1dd;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;color:#4a5264;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='#D4601D';this.style.color='#D4601D'" onmouseout="this.style.borderColor='#e5e1dd';this.style.color='#4a5264'">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         Refresh
       </button>
     </div>
-    <!-- KPI row 1 — status breakdown -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px;">
-      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Pending</div>
-        <div id="kpi-pending" style="font-size:34px;font-family:'DM Serif Display',serif;color:#1a1a2e;line-height:1;">0</div>
+    <!-- KPI row -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:28px;">
+      <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">Pending</div>
+        <div id="p-kpi-pending" style="font-size:28px;font-family:'DM Serif Display',serif;color:#d97706;">0</div>
       </div>
-      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Scheduled</div>
-        <div id="kpi-scheduled" style="font-size:34px;font-family:'DM Serif Display',serif;color:#2563eb;line-height:1;">0</div>
+      <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">Scheduled</div>
+        <div id="p-kpi-scheduled" style="font-size:28px;font-family:'DM Serif Display',serif;color:#2563eb;">0</div>
       </div>
-      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">In Progress</div>
-        <div id="kpi-inprogress" style="font-size:34px;font-family:'DM Serif Display',serif;color:#D4601D;line-height:1;">0</div>
+      <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">In Progress</div>
+        <div id="p-kpi-inprogress" style="font-size:28px;font-family:'DM Serif Display',serif;color:#D4601D;">0</div>
       </div>
-      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Completed</div>
-        <div id="kpi-completed-portal" style="font-size:34px;font-family:'DM Serif Display',serif;color:#16a34a;line-height:1;">0</div>
+      <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">Completed</div>
+        <div id="p-kpi-completed" style="font-size:28px;font-family:'DM Serif Display',serif;color:#16a34a;">0</div>
       </div>
-    </div>
-    <!-- KPI row 2 — summary & financial -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px;">
-      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Active Jobs</div>
-        <div id="kpi-active" style="font-size:34px;font-family:'DM Serif Display',serif;color:#1a1a2e;line-height:1;">0</div>
+      <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">Total</div>
+        <div id="p-kpi-total" style="font-size:28px;font-family:'DM Serif Display',serif;color:#1a1a2e;">0</div>
       </div>
-      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Total Tickets</div>
-        <div id="kpi-total-portal" style="font-size:34px;font-family:'DM Serif Display',serif;color:#1a1a2e;line-height:1;">0</div>
-      </div>
-      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Pending Payment</div>
-        <div id="kpi-payment" style="font-size:34px;font-family:'DM Serif Display',serif;color:#D4601D;line-height:1;">0</div>
-      </div>
-      <div style="background:#fff;border-radius:14px;padding:18px 20px;border:1.5px solid #e5e1dd;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:8px;">Outstanding</div>
-        <div id="kpi-outstanding" style="font-size:26px;font-family:'DM Serif Display',serif;color:#D4601D;line-height:1.1;">€ 0</div>
+      <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e1dd;text-align:center;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9199a8;margin-bottom:6px;">Unpaid</div>
+        <div id="p-kpi-unpaid" style="font-size:28px;font-family:'DM Serif Display',serif;color:#dc2626;">0</div>
       </div>
     </div>
-    <!-- Active jobs -->
-    <h3 style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px;">Active Jobs</h3>
-    <div id="dash-active-jobs" style="display:flex;flex-direction:column;gap:12px;margin-bottom:36px;"></div>
+    <!-- Kanban board -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:32px;">
+      <div style="background:#fffbeb;border-radius:14px;border:1px solid #fde68a;overflow:hidden;">
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fde68a;">
+          <div style="font-size:13px;font-weight:700;color:#d97706;">Pending</div>
+          <span id="p-board-pending-count" style="background:#d97706;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+        </div>
+        <div id="p-board-pending" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+      </div>
+      <div style="background:#eff6ff;border-radius:14px;border:1px solid #bfdbfe;overflow:hidden;">
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #bfdbfe;">
+          <div style="font-size:13px;font-weight:700;color:#2563eb;">Scheduled</div>
+          <span id="p-board-scheduled-count" style="background:#2563eb;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+        </div>
+        <div id="p-board-scheduled" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+      </div>
+      <div style="background:#fff3ec;border-radius:14px;border:1px solid #fed7aa;overflow:hidden;">
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fed7aa;">
+          <div style="font-size:13px;font-weight:700;color:#D4601D;">In Progress</div>
+          <span id="p-board-inprogress-count" style="background:#D4601D;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+        </div>
+        <div id="p-board-inprogress" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+      </div>
+      <div style="background:#f0fdf4;border-radius:14px;border:1px solid #bbf7d0;overflow:hidden;">
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #bbf7d0;">
+          <div style="font-size:13px;font-weight:700;color:#16a34a;">Completed</div>
+          <span id="p-board-completed-count" style="background:#16a34a;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+        </div>
+        <div id="p-board-completed" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+      </div>
+      <div style="background:#fef2f2;border-radius:14px;border:1px solid #fca5a5;overflow:hidden;">
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fca5a5;">
+          <div style="font-size:13px;font-weight:700;color:#dc2626;">Awaiting Payment</div>
+          <span id="p-board-awaitingpayment-count" style="background:#dc2626;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;">0</span>
+        </div>
+        <div id="p-board-awaitingpayment" style="padding:8px;min-height:80px;max-height:340px;overflow-y:auto;"></div>
+      </div>
+    </div>
     <!-- Recent activity -->
-    <h3 style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px;">Recent Activity</h3>
-    <div style="background:#fff;border-radius:16px;border:1px solid #e5e1dd;overflow:hidden;" id="dash-activity"></div>
+    <div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:12px;">Recent Activity</div>
+    <div style="background:#fff;border-radius:14px;border:1px solid #e5e1dd;overflow:hidden;" id="dash-activity"></div>
   </div>
 
   <!-- ═══════════════════ TICKETS VIEW ═══════════════════ -->
@@ -1242,13 +1266,9 @@ function renderDashboard() {
   var scheduled  = portalTickets.filter(function(t){ return t.status==='Scheduled'; });
   var inProgress = portalTickets.filter(function(t){ return t.status==='In Progress'; });
   var completed  = portalTickets.filter(function(t){ return t.status==='Completed'; });
-  var active     = portalTickets.filter(function(t){ return t.status==='In Progress'||t.status==='Scheduled'||t.status==='Pending'; });
-  var pendingPay = portalTickets.filter(function(t){ return !t.paid && (t.paymentStatus !== 'verified'); });
-  var outstanding = pendingPay.reduce(function(sum, t) {
-    return sum + (parseFloat(String(t.rawPrice).replace(/[^0-9.]/g,'')) || 0);
-  }, 0);
+  var unpaid     = portalTickets.filter(function(t){ return t.rawPrice && !t.paid; });
 
-  /* Greeting with real name */
+  /* Greeting */
   var greetEl = document.getElementById('dash-greeting');
   if (greetEl) {
     var hour = new Date().getHours();
@@ -1259,80 +1279,68 @@ function renderDashboard() {
 
   /* KPI counts */
   var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
-  set('dash-active-count',   active.length);
-  set('dash-payment-count',  pendingPay.length);
-  set('kpi-pending',         pending.length);
-  set('kpi-scheduled',       scheduled.length);
-  set('kpi-inprogress',      inProgress.length);
-  set('kpi-active',          active.length);
-  set('kpi-completed-portal',completed.length);
-  set('kpi-payment',         pendingPay.length);
-  set('kpi-total-portal',    portalTickets.length);
-  var outEl = document.getElementById('kpi-outstanding');
-  if (outEl) outEl.textContent = outstanding > 0 ? '\u20AC ' + outstanding.toFixed(2) : '\u20AC 0';
+  set('p-kpi-pending',    pending.length);
+  set('p-kpi-scheduled',  scheduled.length);
+  set('p-kpi-inprogress', inProgress.length);
+  set('p-kpi-completed',  completed.length);
+  set('p-kpi-total',      portalTickets.length);
+  set('p-kpi-unpaid',     unpaid.length);
 
-  /* Active job cards */
-  var ajEl = document.getElementById('dash-active-jobs');
-  if (ajEl) {
-    ajEl.innerHTML = '';
-    if (!active.length) {
-      ajEl.appendChild(mkEl('div', 'background:#fff;border-radius:14px;padding:32px;text-align:center;color:#9199a8;border:1px solid #e5e1dd;', 'No active jobs at the moment.'));
-    } else {
-      active.forEach(function(t) {
-        var card = mkEl('div', 'background:#fff;border-radius:14px;padding:22px 24px;border:1px solid #e5e1dd;cursor:pointer;margin-bottom:12px;');
-        card.addEventListener('mouseover', function(){ card.style.borderColor='#D4601D'; card.style.boxShadow='0 4px 20px rgba(212,96,29,0.1)'; });
-        card.addEventListener('mouseout',  function(){ card.style.borderColor='#e5e1dd'; card.style.boxShadow='none'; });
-        card.addEventListener('click', function(){ openTicketDetail(t.ref); });
+  /* Kanban boards */
+  var boards = [
+    { id:'pending',         tickets: pending,    col:'#d97706' },
+    { id:'scheduled',       tickets: scheduled,  col:'#2563eb' },
+    { id:'inprogress',      tickets: inProgress, col:'#D4601D' },
+    { id:'completed',       tickets: completed,  col:'#16a34a' },
+    { id:'awaitingpayment', tickets: portalTickets.filter(function(t){ return t.rawPrice && !t.paid; }), col:'#dc2626' }
+  ];
 
-        var top = mkEl('div', 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;');
-        var pillRow = mkEl('div', 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;');
-        pillRow.appendChild(mkEl('span', 'font-size:12px;font-weight:600;color:#9199a8;', t.ref));
-        pillRow.appendChild(mkPill(t.status));
-        var right = mkEl('div', 'text-align:right;font-size:12px;color:#9199a8;');
-        right.appendChild(mkEl('div', '', t.priority));
-        right.appendChild(mkEl('span', 'font-weight:500;color:#4a5264;', t.type));
-        top.appendChild(pillRow); top.appendChild(right);
-
-        var title = mkEl('div', 'font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:4px;', t.type + ' — ' + t.address);
-        var sub = mkEl('div', 'font-size:13px;color:#9199a8;margin-bottom:14px;', (t.contractor ? t.contractor + ' assigned · ' : '') + 'Scheduled: ' + (t.scheduled || 'To be confirmed'));
-
-        var barCol = t.status==='Scheduled' ? '#2563eb' : '#D4601D';
-        var pct = Math.round((t.progress/4)*100);
-        var barWrap = mkEl('div', 'background:#f0f1f3;border-radius:4px;height:5px;overflow:hidden;margin-bottom:6px;');
-        barWrap.appendChild(mkEl('div', 'width:'+pct+'%;height:100%;background:'+barCol+';border-radius:4px;'));
-
-        var barLabel = mkEl('div', 'display:flex;justify-content:space-between;font-size:11px;color:#9199a8;');
-        barLabel.appendChild(mkEl('span', '', 'Job received'));
-        barLabel.appendChild(mkEl('span', 'color:'+barCol+';font-weight:600;', t.status));
-        barLabel.appendChild(mkEl('span', '', 'Completed'));
-
-        card.appendChild(top); card.appendChild(title); card.appendChild(sub);
-        card.appendChild(barWrap); card.appendChild(barLabel);
-        ajEl.appendChild(card);
-      });
+  boards.forEach(function(board) {
+    var container = document.getElementById('p-board-' + board.id);
+    var badge     = document.getElementById('p-board-' + board.id + '-count');
+    if (!container) return;
+    container.innerHTML = '';
+    if (badge) badge.textContent = board.tickets.length;
+    if (!board.tickets.length) {
+      container.appendChild(mkEl('div', 'text-align:center;color:#9199a8;font-size:12px;padding:16px 8px;', 'No tickets'));
+      return;
     }
-  }
+    board.tickets.forEach(function(t) {
+      var card = mkEl('div', 'background:#fff;border-radius:10px;padding:12px 14px;border:1px solid #e5e1dd;margin-bottom:8px;cursor:pointer;');
+      card.addEventListener('mouseover', function(){ card.style.borderColor=board.col; card.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'; });
+      card.addEventListener('mouseout',  function(){ card.style.borderColor='#e5e1dd'; card.style.boxShadow='none'; });
+      card.addEventListener('click', function(){ showPortalView('tickets'); openTicketDetail(t.ref); });
+      var top = mkEl('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;');
+      top.appendChild(mkEl('span', 'font-size:10px;font-weight:700;color:#9199a8;', t.ref));
+      top.appendChild(mkEl('span', 'font-size:9px;font-weight:700;padding:2px 6px;border-radius:100px;background:'+(t.priority==='Urgent'?'#fef2f2':'#f0f1f3')+';color:'+(t.priority==='Urgent'?'#dc2626':'#9199a8')+';', t.priority));
+      card.appendChild(top);
+      card.appendChild(mkEl('div', 'font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:2px;line-height:1.3;', t.type));
+      card.appendChild(mkEl('div', 'font-size:11px;color:#9199a8;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;', t.address));
+      if (t.scheduled) card.appendChild(mkEl('div', 'font-size:11px;color:#4a5264;', 'Scheduled: ' + t.scheduled));
+      if (t.rawPrice) card.appendChild(mkEl('div', 'margin-top:6px;font-size:11px;font-weight:700;color:#1a1a2e;background:#f7f8fa;border-radius:6px;padding:3px 8px;display:inline-block;', t.price));
+      container.appendChild(card);
+    });
+  });
 
-  /* Activity feed — built from real tickets */
+  /* Recent activity */
   var acEl = document.getElementById('dash-activity');
   if (acEl) {
     acEl.innerHTML = '';
     if (!portalTickets.length) {
       acEl.appendChild(mkEl('div', 'padding:24px;text-align:center;color:#9199a8;font-size:13px;', 'No activity yet. Submit your first request to get started.'));
     } else {
-      var recent = portalTickets.slice(0, 5);
-      recent.forEach(function(t, i) {
+      portalTickets.slice(0, 6).forEach(function(t, i) {
         var isCompleted = t.status === 'Completed';
         var isUrgent    = t.priority === 'Urgent';
         var col  = isCompleted ? '#f0fdf4' : isUrgent ? '#fef2f2' : '#eff6ff';
         var tc   = isCompleted ? '#16a34a' : isUrgent ? '#dc2626' : '#2563eb';
         var icon = isCompleted ? 'OK' : isUrgent ? '!' : 'NEW';
-        var row = mkEl('div', 'padding:16px 20px;' + (i < recent.length-1 ? 'border-bottom:1px solid #f0f1f3;' : '') + 'display:flex;align-items:center;gap:14px;cursor:pointer;');
-        row.addEventListener('click', function(){ openTicketDetail(t.ref); });
-        row.appendChild(mkEl('div', 'width:34px;height:34px;background:'+col+';border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:'+tc+';flex-shrink:0;', icon));
+        var row = mkEl('div', 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:flex;align-items:center;gap:12px;cursor:pointer;');
+        row.addEventListener('click', function(){ showPortalView('tickets'); openTicketDetail(t.ref); });
+        row.appendChild(mkEl('div', 'width:34px;height:34px;background:'+col+';border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:'+tc+';flex-shrink:0;', icon));
         var info = mkEl('div', '');
-        info.appendChild(mkEl('div', 'font-size:14px;font-weight:500;color:#1a1a2e;', t.type + ' — ' + t.address));
-        info.appendChild(mkEl('div', 'font-size:12px;color:#9199a8;margin-top:2px;', t.status + ' · ' + t.ref));
+        info.appendChild(mkEl('div', 'font-size:13px;font-weight:500;color:#1a1a2e;', t.type + ' — ' + t.address));
+        info.appendChild(mkEl('div', 'font-size:11px;color:#9199a8;margin-top:2px;', t.status + ' · ' + t.ref));
         row.appendChild(info);
         acEl.appendChild(row);
       });
