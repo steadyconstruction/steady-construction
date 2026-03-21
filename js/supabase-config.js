@@ -253,14 +253,23 @@ function supaMarkSubcJobDone(ref) {
 /* ── CLIENT INVITATIONS ── */
 function supaInviteClient(email) {
   var svcKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJscHVuZ2NwdW93dmd0YmduY3VxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkzOTIzOCwiZXhwIjoyMDg5NTE1MjM4fQ._O2g3JzeHSBJ8m-LV7rqWeQKXVrDDUJuwhxxBmRfL5c';
-  return fetch(SUPA_URL + '/auth/v1/admin/invite', {
+  /* Try invite first; if user already exists fall back to password recovery email (same UX for client) */
+  return fetch(SUPA_URL + '/auth/v1/invite', {
     method: 'POST',
     headers: { 'apikey': svcKey, 'Authorization': 'Bearer ' + svcKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: email })
   }).then(function(res) {
     return res.json().then(function(data) {
-      if (!res.ok) return { error: { message: data.msg || data.message || 'Invite failed' } };
-      return { data: data, error: null };
+      if (res.ok) return { data: data, error: null };
+      /* "already registered" — send a recovery (set-password) link instead */
+      if ((data.msg || data.message || '').toLowerCase().indexOf('already') !== -1) {
+        return fetch(SUPA_URL + '/auth/v1/recover', {
+          method: 'POST',
+          headers: { 'apikey': svcKey, 'Authorization': 'Bearer ' + svcKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        }).then(function(r2) { return r2.ok ? { data: {}, error: null } : { error: { message: 'Resend failed' } }; });
+      }
+      return { error: { message: data.msg || data.message || 'Invite failed' } };
     });
   });
 }
