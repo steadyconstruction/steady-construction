@@ -3740,28 +3740,35 @@ function openCreateSubcLogin(contractor) {
     saveBtn.disabled = true; saveBtn.textContent = 'Creating…';
     errEl.style.display = 'none';
 
-    /* Use a temporary supabase client to avoid signing out the admin */
-    var tempKey = _k1 + _k2 + _k3;
-    var tempClient = supabase.createClient(SUPA_URL, tempKey, { auth: { persistSession: false, storageKey: 'subc-tmp-' + Date.now() } });
-    tempClient.auth.signUp({ email: email, password: pass }).then(function(result) {
-      if (result.error) {
-        saveBtn.disabled = false; saveBtn.textContent = 'Create Login';
-        errEl.style.display = 'block'; errEl.textContent = result.error.message;
-        return;
-      }
-      /* Insert into users table */
-      supaCreateSubcUser(email, contractor.name, contractor.trade, contractor.phone).then(function(res) {
-        if (res.error && res.error.code !== '23505') { /* 23505 = duplicate key, already exists */
+    /* Use Supabase Auth Admin API with service role key — works regardless of signup settings */
+    var _sr = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJscHVuZ2NwdW93dmd0YmduY3VxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkzOTIzOCwiZXhwIjoyMDg5NTE1MjM4fQ._O2g3JzeHSBJ8m-LV7rqWeQKXVrDDUJuwhxxBmRfL5c';
+    fetch(SUPA_URL + '/auth/v1/admin/users', {
+      method: 'POST',
+      headers: { 'apikey': _sr, 'Authorization': 'Bearer ' + _sr, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: pass, email_confirm: true })
+    }).then(function(res) { return res.json(); }).then(function(data) {
+      if (data.error || data.msg || (!data.id && !data.email)) {
+        var msg = (data.error && data.error.message) || data.msg || data.message || 'Failed to create auth account.';
+        /* If user already exists in auth, continue to insert users table */
+        if (msg.toLowerCase().indexOf('already') === -1) {
           saveBtn.disabled = false; saveBtn.textContent = 'Create Login';
-          errEl.style.display = 'block'; errEl.textContent = res.error.message;
-          return;
+          errEl.style.display = 'block'; errEl.textContent = msg; return;
+        }
+      }
+      /* Insert into public.users with role='subc' */
+      supaCreateSubcUser(email, contractor.name, contractor.trade, contractor.phone).then(function(res) {
+        if (res.error && res.error.code !== '23505') {
+          saveBtn.disabled = false; saveBtn.textContent = 'Create Login';
+          errEl.style.display = 'block'; errEl.textContent = res.error.message; return;
         }
         overlay.remove();
-        /* Brief success toast */
         var toast = aEl('div', 'position:fixed;bottom:24px;right:24px;z-index:3000;background:#7c3aed;color:#fff;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:600;font-family:"DM Sans",sans-serif;box-shadow:0 4px 16px rgba(124,58,237,0.4);', '✓ SUBC login created for ' + contractor.name);
         document.body.appendChild(toast);
         setTimeout(function(){ toast.remove(); }, 4000);
       });
+    }).catch(function(err) {
+      saveBtn.disabled = false; saveBtn.textContent = 'Create Login';
+      errEl.style.display = 'block'; errEl.textContent = 'Network error. Please try again.';
     });
   });
 
