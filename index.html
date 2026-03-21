@@ -1128,7 +1128,7 @@ function mapSupaTicketsToPortal(rows) {
       paymentStatus: r.payment_status || null,
       payStatus: r.paid ? 'Paid' : (r.payment_status === 'pending_verification' ? 'Under Review' : (r.payment_status === 'rejected' ? 'Awaiting Payment' : 'Awaiting Payment')),
       created_at: r.created_at || '',
-      progress: r.status === 'Completed' ? 4 : r.status === 'In Progress' ? 3 : r.status === 'Scheduled' ? 2 : 1,
+      progress: (r.status === 'Completed' || r.status === 'Closed') ? 5 : r.status === 'In Progress' ? 4 : r.status === 'Scheduled' ? 3 : r.status === 'Assigned' ? 2 : 1,
       messages: []
     };
   });
