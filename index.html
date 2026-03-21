@@ -1185,9 +1185,72 @@ function logoutPortal() {
 window.addEventListener('load', function() {
   var pw = document.getElementById('portal-password');
   if (pw) pw.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  /* Check for Supabase invite / password reset callback in URL hash */
+  checkInviteCallback();
   /* Auto-restore session on page load/refresh */
   setTimeout(tryRestoreSession, 400);
 });
+
+function checkInviteCallback() {
+  /* Supabase sends invite links with hash fragment: #access_token=...&type=invite */
+  var hash = window.location.hash;
+  if (!hash) return;
+  var params = {};
+  hash.replace(/^#/, '').split('&').forEach(function(p) {
+    var parts = p.split('='); params[parts[0]] = decodeURIComponent(parts[1] || '');
+  });
+  if ((params.type === 'invite' || params.type === 'recovery') && params.access_token) {
+    /* Supabase JS will pick up the session from the hash automatically; just show the set-password modal */
+    var modal = document.getElementById('set-password-modal');
+    if (modal) modal.style.display = 'flex';
+    /* Store tokens so we can update the user */
+    window._inviteAccessToken = params.access_token;
+    window._inviteRefreshToken = params.refresh_token || '';
+    /* Clear hash from URL without reload */
+    history.replaceState(null, '', window.location.pathname);
+  }
+}
+
+function doSetPassword() {
+  var pw1 = (document.getElementById('set-pw-1') || {}).value || '';
+  var pw2 = (document.getElementById('set-pw-2') || {}).value || '';
+  var errEl = document.getElementById('set-pw-error');
+  var btn   = document.getElementById('set-pw-btn');
+  function showErr(msg) { if (errEl) { errEl.style.display='block'; errEl.textContent=msg; } }
+  if (pw1.length < 8) { showErr('Password must be at least 8 characters.'); return; }
+  if (pw1 !== pw2)    { showErr('Passwords do not match.'); return; }
+  if (errEl) errEl.style.display = 'none';
+  if (btn) { btn.textContent = 'Activating…'; btn.disabled = true; }
+  initSupabase();
+  if (!supa) { showErr('Supabase not loaded — please refresh.'); if (btn) { btn.textContent='Activate Account →'; btn.disabled=false; } return; }
+  /* Set the session from the invite tokens first, then update password */
+  supa.auth.setSession({ access_token: window._inviteAccessToken, refresh_token: window._inviteRefreshToken })
+    .then(function(r) {
+      if (r.error) { showErr('Session error: ' + r.error.message); if (btn) { btn.textContent='Activate Account →'; btn.disabled=false; } return; }
+      var userEmail = r.data && r.data.user && r.data.user.email;
+      return supa.auth.updateUser({ password: pw1 }).then(function(upd) {
+        if (upd.error) { showErr('Error: ' + upd.error.message); if (btn) { btn.textContent='Activate Account →'; btn.disabled=false; } return; }
+        /* Mark account_setup_completed in users table */
+        if (userEmail) supaMarkClientSetupComplete(userEmail);
+        /* Close modal and open client portal */
+        var modal = document.getElementById('set-password-modal');
+        if (modal) modal.style.display = 'none';
+        /* Log in the user via the existing session */
+        supaGetRole(userEmail).then(function(userData) {
+          if (userData) {
+            window._portalUser = userData;
+            localStorage.setItem('sc_portal_role', 'client');
+            supaLoadTickets(userData.id).then(function(rows) {
+              if (rows && rows.length) mapSupaTicketsToPortal(rows);
+              document.getElementById('portal-dashboard').style.display = 'block';
+              document.body.style.overflow = 'hidden';
+              initPortal();
+            });
+          }
+        });
+      });
+    });
+}
 
 function tryRestoreSession() {
   if (!supa) return;
@@ -2239,6 +2302,29 @@ window.submitNewRequest = submitNewRequest;
   </div>
 </div>
 
+<!-- SET PASSWORD MODAL (shown after clicking invite link) -->
+<div id="set-password-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(28,28,28,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:20px;padding:48px 40px;width:100%;max-width:440px;margin:20px;box-shadow:0 24px 80px rgba(28,28,28,0.18);position:relative;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="width:52px;height:52px;background:linear-gradient(135deg,#D4601D,#e87a3a);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:18px;font-weight:700;color:#fff;">SC</div>
+      <h3 style="font-size:24px;color:#1a1614;margin-bottom:8px;font-family:'DM Serif Display',serif;">Activate Your Account</h3>
+      <p style="font-size:14px;color:#5a5450;">Welcome to Steady Construction Client Portal.<br>Choose a password to get started.</p>
+    </div>
+    <div id="set-pw-error" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#dc2626;"></div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label style="font-size:13px;font-weight:600;color:#4a4a4a;display:block;margin-bottom:6px;">New Password</label>
+        <input id="set-pw-1" type="password" placeholder="Minimum 8 characters" style="width:100%;border:1.5px solid #e5e1dd;border-radius:10px;padding:12px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#D4601D'" onblur="this.style.borderColor='#e5e1dd'">
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;color:#4a4a4a;display:block;margin-bottom:6px;">Confirm Password</label>
+        <input id="set-pw-2" type="password" placeholder="Repeat password" style="width:100%;border:1.5px solid #e5e1dd;border-radius:10px;padding:12px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#D4601D'" onblur="this.style.borderColor='#e5e1dd'">
+      </div>
+      <button id="set-pw-btn" onclick="doSetPassword()" style="background:linear-gradient(135deg,#D4601D,#e87a3a);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px;">Activate Account →</button>
+    </div>
+  </div>
+</div>
+
 <!-- SUBC DASHBOARD -->
 <div id="subc-dashboard" style="display:none;position:fixed;inset:0;z-index:999;background:#f2f0ee;overflow-y:auto;font-family:'DM Sans',sans-serif;">
 
@@ -2527,8 +2613,8 @@ window.submitNewRequest = submitNewRequest;
     </div>
     <!-- Client table -->
     <div style="background:#fff;border-radius:14px;border:1px solid var(--gray-200);overflow:hidden;">
-      <div style="padding:14px 20px;background:var(--gray-100);display:grid;grid-template-columns:2fr 1.5fr 1fr 80px 80px 100px 120px;gap:10px;font-size:11px;font-weight:600;color:var(--gray-400);letter-spacing:0.5px;text-transform:uppercase;">
-        <span>Client</span><span>Email</span><span>Phone</span><span>Active</span><span>Closed</span><span>Status</span><span>Actions</span>
+      <div style="padding:14px 20px;background:var(--gray-100);display:grid;grid-template-columns:2fr 1.5fr 1fr 60px 60px 90px 110px 130px;gap:10px;font-size:11px;font-weight:600;color:var(--gray-400);letter-spacing:0.5px;text-transform:uppercase;">
+        <span>Client</span><span>Email</span><span>Phone</span><span>Active</span><span>Closed</span><span>Status</span><span>Invite</span><span>Actions</span>
       </div>
       <div id="admin-client-list"></div>
     </div>
@@ -3448,7 +3534,7 @@ function renderAdminClients() {
     var activeCount = clientTickets.filter(function(t){ return t.status !== 'Completed' && t.status !== 'Closed'; }).length;
     var closedCount = clientTickets.filter(function(t){ return t.status === 'Completed' || t.status === 'Closed'; }).length;
 
-    var row = aEl('div', 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:grid;grid-template-columns:2fr 1.5fr 1fr 80px 80px 100px 120px;gap:10px;align-items:center;');
+    var row = aEl('div', 'padding:14px 20px;border-bottom:1px solid #f0f1f3;display:grid;grid-template-columns:2fr 1.5fr 1fr 60px 60px 90px 110px 130px;gap:10px;align-items:center;');
     var nameCol = aEl('div', '');
     nameCol.appendChild(aEl('div', 'font-size:14px;font-weight:600;color:#1a1a2e;', c.name));
     if (c.company) nameCol.appendChild(aEl('div', 'font-size:12px;color:#9199a8;', c.company));
@@ -3458,14 +3544,30 @@ function renderAdminClients() {
     row.appendChild(aEl('div', 'text-align:center;font-size:14px;font-weight:700;color:#D4601D;', String(activeCount)));
     row.appendChild(aEl('div', 'text-align:center;font-size:14px;font-weight:700;color:#16a34a;', String(closedCount)));
     row.appendChild(aPill(c.active ? 'Active' : 'Inactive'));
-    var btns = aEl('div', 'display:flex;gap:6px;');
-    var editBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Edit');
+    /* Invite status badge */
+    var invLabel, invBg, invCol;
+    if (c.accountSetupCompleted) { invLabel='Active'; invBg='#f0fdf4'; invCol='#16a34a'; }
+    else if (c.invitationSentAt) { invLabel='Invited'; invBg='#fff7ed'; invCol='#d97706'; }
+    else { invLabel='Not Invited'; invBg='#f3f4f6'; invCol='#6b7280'; }
+    row.appendChild(aEl('span', 'display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:'+invBg+';color:'+invCol+';white-space:nowrap;', invLabel));
+    var btns = aEl('div', 'display:flex;gap:5px;flex-wrap:wrap;');
+    var editBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:"DM Sans",sans-serif;', 'Edit');
     (function(client, rowEl) {
       editBtn.addEventListener('click', function() { openEditClientPanel(client, rowEl); });
     })(c, row);
-    var toggleBtn = aEl('button', 'background:#f0f1f3;color:#4a5264;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;', c.active ? 'Disable' : 'Enable');
-    toggleBtn.addEventListener('click', function() { toggleClient(i); });
-    btns.appendChild(editBtn); btns.appendChild(toggleBtn);
+    var resendBtn = aEl('button', 'background:#fff7ed;color:#d97706;border:1px solid #fed7aa;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:"DM Sans",sans-serif;', c.invitationSentAt ? 'Resend' : 'Invite');
+    (function(client, btn) {
+      btn.addEventListener('click', function() {
+        btn.textContent = 'Sending…'; btn.disabled = true;
+        supaInviteClient(client.email).then(function(r) {
+          if (r.error) { btn.textContent = 'Error'; btn.disabled = false; return; }
+          supaMarkInviteSent(client._id).then(function() {
+            supaLoadClients().then(function(rows) { mapSupaClientsToAdmin(rows||[]); renderAdminClients(); });
+          });
+        });
+      });
+    })(c, resendBtn);
+    btns.appendChild(editBtn); btns.appendChild(resendBtn);
     row.appendChild(btns);
     container.appendChild(row);
   });
@@ -3545,13 +3647,25 @@ function createClient() {
       if (msg) { msg.style.display = 'block'; msg.style.color = '#dc2626'; msg.textContent = 'Error: ' + result.error.message; }
       return;
     }
-    supaLoadClients().then(function(rows) {
-      mapSupaClientsToAdmin(rows || []);
-      renderAdminClients();
+    var newUserId = result.data && result.data.id;
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#D4601D'; msg.textContent = 'Account created. Sending invitation email…'; }
+    /* Send Supabase invite email (creates auth user + sends setup link) */
+    supaInviteClient(email).then(function(invResult) {
+      var invMsg = '';
+      if (invResult.error) {
+        invMsg = 'Account created for ' + name + ', but invite email failed: ' + invResult.error.message;
+        if (msg) { msg.style.color = '#d97706'; }
+      } else {
+        invMsg = 'Account created & invitation sent to ' + email + '.';
+        if (msg) { msg.style.color = '#16a34a'; }
+        if (newUserId) supaMarkInviteSent(newUserId);
+      }
+      if (msg) msg.textContent = invMsg;
+      supaLoadClients().then(function(rows) { mapSupaClientsToAdmin(rows || []); renderAdminClients(); });
+      ['nc-name','nc-email','nc-phone','nc-company','nc-address'].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ''; });
+      document.getElementById('new-client-form').style.display = 'none';
+      setTimeout(function() { var m = document.getElementById('client-created-msg'); if (m) m.style.display = 'none'; }, 6000);
     });
-    if (msg) { msg.style.display = 'block'; msg.style.color = '#16a34a'; msg.textContent = 'Account created for ' + name + '.'; }
-    ['nc-name','nc-email','nc-phone','nc-company','nc-address'].forEach(function(id) { var e = document.getElementById(id); if (e) e.value = ''; });
-    setTimeout(function() { var m = document.getElementById('client-created-msg'); if (m) m.style.display = 'none'; }, 4000);
   });
 }
 
@@ -4718,7 +4832,7 @@ window.switchSubcView  = switchSubcView;
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="js/supabase-config.js?v=8"></script>
+<script src="js/supabase-config.js?v=9"></script>
 
 
 

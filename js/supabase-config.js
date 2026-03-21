@@ -209,7 +209,8 @@ function mapSupaTicketsToAdmin(rows) {
 }
 function mapSupaClientsToAdmin(rows) {
   adminClients = rows.map(function(r){
-    return {_id:r.id,name:r.full_name,email:r.email,phone:r.phone||'',company:r.company||'',address:r.address||'',props:0,tickets:0,active:r.is_active};
+    return {_id:r.id,name:r.full_name,email:r.email,phone:r.phone||'',company:r.company||'',address:r.address||'',props:0,tickets:0,active:r.is_active,
+      invitationSentAt:r.invitation_sent_at||null, accountSetupCompleted:r.account_setup_completed||false};
   });
 }
 function mapSupaContractorsToAdmin(rows) {
@@ -247,4 +248,33 @@ function supaAssignSubc(ref, subcId, subcName) {
 function supaMarkSubcJobDone(ref) {
   if (!ref) return Promise.resolve({ error:{ message:'no ref' } });
   return _restPatch('tickets', 'ref=eq.' + encodeURIComponent(ref), { status: 'Awaiting Admin Review' });
+}
+
+/* ── CLIENT INVITATIONS ── */
+function supaInviteClient(email) {
+  var svcKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJscHVuZ2NwdW93dmd0YmduY3VxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkzOTIzOCwiZXhwIjoyMDg5NTE1MjM4fQ._O2g3JzeHSBJ8m-LV7rqWeQKXVrDDUJuwhxxBmRfL5c';
+  return fetch(SUPA_URL + '/auth/v1/admin/invite', {
+    method: 'POST',
+    headers: { 'apikey': svcKey, 'Authorization': 'Bearer ' + svcKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
+  }).then(function(res) {
+    return res.json().then(function(data) {
+      if (!res.ok) return { error: { message: data.msg || data.message || 'Invite failed' } };
+      return { data: data, error: null };
+    });
+  });
+}
+function supaMarkInviteSent(userId) {
+  return fetch(SUPA_URL + '/rest/v1/users?id=eq.' + encodeURIComponent(userId), {
+    method: 'PATCH',
+    headers: { 'apikey': _k1+_k2+_k3, 'Authorization': 'Bearer ' + (_k1+_k2+_k3), 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ invitation_sent_at: new Date().toISOString() })
+  }).then(function(res) { return res.ok ? { error:null } : { error:{ message:'Could not update invitation_sent_at' } }; });
+}
+function supaMarkClientSetupComplete(email) {
+  return fetch(SUPA_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(email), {
+    method: 'PATCH',
+    headers: { 'apikey': _k1+_k2+_k3, 'Authorization': 'Bearer ' + (_k1+_k2+_k3), 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ account_setup_completed: true })
+  }).then(function(res) { return res.ok ? { error:null } : { error:{ message:'Setup complete update failed' } }; });
 }
